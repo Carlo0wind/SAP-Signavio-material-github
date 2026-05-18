@@ -1,0 +1,519 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" id="Definitions_Galletas" name="Proceso de Elaboracion de Galletas" targetNamespace="http://bpmn.io/schema/bpmn/galletas" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.13.2">
+  <collaboration id="Collab_Galletas">
+    <participant id="Pool_Galletas" name="Proceso de Elaboracion de Galletas" processRef="Process_Galletas" />
+  </collaboration>
+  <process id="Process_Galletas" name="Proceso de Elaboracion de Galletas" isExecutable="false">
+    <laneSet id="LaneSet_1">
+      <lane id="Lane_Empaque" name="Empaque">
+        <flowNodeRef>Task_Empacar</flowNodeRef>
+        <flowNodeRef>End_ProductoTerminado</flowNodeRef>
+      </lane>
+      <lane id="Lane_Laminacion" name="Laminacion, Calibracion y Coccion">
+        <flowNodeRef>Task_EcharTolva</flowNodeRef>
+        <flowNodeRef>Task_Comprimir</flowNodeRef>
+        <flowNodeRef>Task_Calibrar</flowNodeRef>
+        <flowNodeRef>Task_Relajar</flowNodeRef>
+        <flowNodeRef>Task_Cortar</flowNodeRef>
+        <flowNodeRef>GW_Sal</flowNodeRef>
+        <flowNodeRef>Task_AgregarSal</flowNodeRef>
+        <flowNodeRef>GW_Join_Sal</flowNodeRef>
+        <flowNodeRef>Task_Hornear</flowNodeRef>
+      </lane>
+      <lane id="Lane_Preparacion" name="Preparacion de Masa">
+        <flowNodeRef>GW_TipoMasa</flowNodeRef>
+        <flowNodeRef>Task_AmasarSuave_Ag</flowNodeRef>
+        <flowNodeRef>Task_AgregarHarina_Ag</flowNodeRef>
+        <flowNodeRef>Task_NuevoAmasado_Ag</flowNodeRef>
+        <flowNodeRef>Task_AmasarSuave_Cr</flowNodeRef>
+        <flowNodeRef>Task_AgregarHarina_Cr</flowNodeRef>
+        <flowNodeRef>Task_NuevoAmasado_Cr</flowNodeRef>
+        <flowNodeRef>Task_Fermentacion</flowNodeRef>
+        <flowNodeRef>Task_AmasarFinalCr</flowNodeRef>
+        <flowNodeRef>GW_Join_Masa</flowNodeRef>
+      </lane>
+      <lane id="Lane_Recepcion" name="Recepcion y Control de Calidad">
+        <flowNodeRef>StartEvent_1</flowNodeRef>
+        <flowNodeRef>Task_RecepcionarMP</flowNodeRef>
+        <flowNodeRef>Task_VerificarCert</flowNodeRef>
+        <flowNodeRef>GW_TieneCert</flowNodeRef>
+        <flowNodeRef>Task_RechazarProd</flowNodeRef>
+        <flowNodeRef>End_Rechazo</flowNodeRef>
+        <flowNodeRef>Task_Pesar</flowNodeRef>
+        <flowNodeRef>GW_EsHarina</flowNodeRef>
+        <flowNodeRef>Task_Almacenar</flowNodeRef>
+        <flowNodeRef>End_Almacen</flowNodeRef>
+      </lane>
+    </laneSet>
+    <startEvent id="StartEvent_1" name="Inicio&#10;del Proceso">
+      <outgoing>SF_Start_RecepcionMP</outgoing>
+    </startEvent>
+    <task id="Task_RecepcionarMP" name="Recepcionar&#10;Materia Prima">
+      <incoming>SF_Start_RecepcionMP</incoming>
+      <outgoing>SF_RecepcionMP_VerifCert</outgoing>
+    </task>
+    <task id="Task_VerificarCert" name="Verificar Certificado&#10;de Calidad">
+      <incoming>SF_RecepcionMP_VerifCert</incoming>
+      <outgoing>SF_VerifCert_GWCert</outgoing>
+    </task>
+    <exclusiveGateway id="GW_TieneCert" name="¿Tiene certificado&#10;de calidad?" gatewayDirection="Diverging">
+      <incoming>SF_VerifCert_GWCert</incoming>
+      <outgoing>SF_GWCert_NO_Rechazar</outgoing>
+      <outgoing>SF_GWCert_SI_Pesar</outgoing>
+    </exclusiveGateway>
+    <task id="Task_RechazarProd" name="Rechazar Producto">
+      <incoming>SF_GWCert_NO_Rechazar</incoming>
+      <outgoing>SF_Rechazar_End</outgoing>
+    </task>
+    <endEvent id="End_Rechazo" name="Fin&#10;(Producto Rechazado)">
+      <incoming>SF_Rechazar_End</incoming>
+    </endEvent>
+    <task id="Task_Pesar" name="Pesar&#10;Materia Prima">
+      <incoming>SF_GWCert_SI_Pesar</incoming>
+      <outgoing>SF_Pesar_GWHarina</outgoing>
+    </task>
+    <exclusiveGateway id="GW_EsHarina" name="¿Es harina?" gatewayDirection="Diverging">
+      <incoming>SF_Pesar_GWHarina</incoming>
+      <outgoing>SF_GWHarina_NO_Almacenar</outgoing>
+      <outgoing>SF_GWHarina_SI_TipoMasa</outgoing>
+    </exclusiveGateway>
+    <task id="Task_Almacenar" name="Almacenar&#10;Producto">
+      <incoming>SF_GWHarina_NO_Almacenar</incoming>
+      <outgoing>SF_Almacenar_End</outgoing>
+    </task>
+    <endEvent id="End_Almacen" name="Fin&#10;(Producto Almacenado)">
+      <incoming>SF_Almacenar_End</incoming>
+    </endEvent>
+    <exclusiveGateway id="GW_TipoMasa" name="¿Tipo de masa?" gatewayDirection="Diverging">
+      <incoming>SF_GWHarina_SI_TipoMasa</incoming>
+      <outgoing>SF_TipoMasa_Aglutinante</outgoing>
+      <outgoing>SF_TipoMasa_Cracker</outgoing>
+    </exclusiveGateway>
+    <task id="Task_AmasarSuave_Ag" name="Amasar a velocidad suave&#10;(Masa Aglutinante)">
+      <incoming>SF_TipoMasa_Aglutinante</incoming>
+      <outgoing>SF_Ag1_Ag2</outgoing>
+    </task>
+    <task id="Task_AgregarHarina_Ag" name="Agregar harina de trigo&#10;(crema semiconsistente)">
+      <incoming>SF_Ag1_Ag2</incoming>
+      <outgoing>SF_Ag2_Ag3</outgoing>
+    </task>
+    <task id="Task_NuevoAmasado_Ag" name="Nuevo amasado&#10;(masa desmenuzable)">
+      <incoming>SF_Ag2_Ag3</incoming>
+      <outgoing>SF_Ag3_JoinMasa</outgoing>
+    </task>
+    <task id="Task_AmasarSuave_Cr" name="Amasar a velocidad suave&#10;(Masa Cracker)">
+      <incoming>SF_TipoMasa_Cracker</incoming>
+      <outgoing>SF_Cr1_Cr2</outgoing>
+    </task>
+    <task id="Task_AgregarHarina_Cr" name="Agregar harina de trigo&#10;(crema semiconsistente)">
+      <incoming>SF_Cr1_Cr2</incoming>
+      <outgoing>SF_Cr2_Cr3</outgoing>
+    </task>
+    <task id="Task_NuevoAmasado_Cr" name="Nuevo amasado&#10;(masa cracker base)">
+      <incoming>SF_Cr2_Cr3</incoming>
+      <outgoing>SF_Cr3_Fermentacion</outgoing>
+    </task>
+    <task id="Task_Fermentacion" name="Proceso de Fermentacion&#10;(estirar masa / ablandar gluten)">
+      <incoming>SF_Cr3_Fermentacion</incoming>
+      <outgoing>SF_Fermentacion_AmasarFinal</outgoing>
+    </task>
+    <task id="Task_AmasarFinalCr" name="Amasar nuevamente&#10;(post-fermentacion)">
+      <incoming>SF_Fermentacion_AmasarFinal</incoming>
+      <outgoing>SF_AmasarFinal_JoinMasa</outgoing>
+    </task>
+    <exclusiveGateway id="GW_Join_Masa" name="" gatewayDirection="Converging">
+      <incoming>SF_Ag3_JoinMasa</incoming>
+      <incoming>SF_AmasarFinal_JoinMasa</incoming>
+      <outgoing>SF_JoinMasa_EcharTolva</outgoing>
+    </exclusiveGateway>
+    <task id="Task_EcharTolva" name="Echar masa a la&#10;tolva laminadora">
+      <incoming>SF_JoinMasa_EcharTolva</incoming>
+      <outgoing>SF_EcharTolva_Comprimir</outgoing>
+    </task>
+    <task id="Task_Comprimir" name="Comprimir masa&#10;(extraer aire)">
+      <incoming>SF_EcharTolva_Comprimir</incoming>
+      <outgoing>SF_Comprimir_Calibrar</outgoing>
+    </task>
+    <task id="Task_Calibrar" name="Calibrar espesor&#10;de la masa">
+      <incoming>SF_Comprimir_Calibrar</incoming>
+      <outgoing>SF_Calibrar_Relajar</outgoing>
+    </task>
+    <task id="Task_Relajar" name="Estirar y relajar masa&#10;(bajar tensiones)">
+      <incoming>SF_Calibrar_Relajar</incoming>
+      <outgoing>SF_Relajar_Cortar</outgoing>
+    </task>
+    <task id="Task_Cortar" name="Cortar masa con moldes&#10;(forma, tamano, agujeros)">
+      <incoming>SF_Relajar_Cortar</incoming>
+      <outgoing>SF_Cortar_GWSal</outgoing>
+    </task>
+    <exclusiveGateway id="GW_Sal" name="¿Se adiciona&#10;sal a la masa?" gatewayDirection="Diverging">
+      <incoming>SF_Cortar_GWSal</incoming>
+      <outgoing>SF_Sal_SI_AgregarSal</outgoing>
+      <outgoing>SF_Sal_NO_JoinSal</outgoing>
+    </exclusiveGateway>
+    <task id="Task_AgregarSal" name="Adicionar sal&#10;a la masa">
+      <incoming>SF_Sal_SI_AgregarSal</incoming>
+      <outgoing>SF_AgregarSal_JoinSal</outgoing>
+    </task>
+    <exclusiveGateway id="GW_Join_Sal" name="" gatewayDirection="Converging">
+      <incoming>SF_AgregarSal_JoinSal</incoming>
+      <incoming>SF_Sal_NO_JoinSal</incoming>
+      <outgoing>SF_JoinSal_Hornear</outgoing>
+    </exclusiveGateway>
+    <task id="Task_Hornear" name="Coccion en horno&#10;(transferencia de calor)">
+      <incoming>SF_JoinSal_Hornear</incoming>
+      <outgoing>SF_Hornear_Empacar</outgoing>
+    </task>
+    <task id="Task_Empacar" name="Empacar galletas&#10;(embalaje / producto terminado)">
+      <incoming>SF_Hornear_Empacar</incoming>
+      <outgoing>SF_Empacar_End</outgoing>
+    </task>
+    <endEvent id="End_ProductoTerminado" name="Fin&#10;(Producto Terminado)">
+      <incoming>SF_Empacar_End</incoming>
+    </endEvent>
+    <sequenceFlow id="SF_Start_RecepcionMP" sourceRef="StartEvent_1" targetRef="Task_RecepcionarMP" />
+    <sequenceFlow id="SF_RecepcionMP_VerifCert" sourceRef="Task_RecepcionarMP" targetRef="Task_VerificarCert" />
+    <sequenceFlow id="SF_VerifCert_GWCert" sourceRef="Task_VerificarCert" targetRef="GW_TieneCert" />
+    <sequenceFlow id="SF_GWCert_NO_Rechazar" name="No" sourceRef="GW_TieneCert" targetRef="Task_RechazarProd">
+      <conditionExpression xsi:type="tFormalExpression">No tiene certificado de calidad</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="SF_GWCert_SI_Pesar" name="Si" sourceRef="GW_TieneCert" targetRef="Task_Pesar">
+      <conditionExpression xsi:type="tFormalExpression">Tiene certificado de calidad</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="SF_Rechazar_End" sourceRef="Task_RechazarProd" targetRef="End_Rechazo" />
+    <sequenceFlow id="SF_Pesar_GWHarina" sourceRef="Task_Pesar" targetRef="GW_EsHarina" />
+    <sequenceFlow id="SF_GWHarina_NO_Almacenar" name="No&#10;(no es harina)" sourceRef="GW_EsHarina" targetRef="Task_Almacenar">
+      <conditionExpression xsi:type="tFormalExpression">No es harina</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="SF_GWHarina_SI_TipoMasa" name="Si&#10;(es harina)" sourceRef="GW_EsHarina" targetRef="GW_TipoMasa">
+      <conditionExpression xsi:type="tFormalExpression">Es harina</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="SF_Almacenar_End" sourceRef="Task_Almacenar" targetRef="End_Almacen" />
+    <sequenceFlow id="SF_TipoMasa_Aglutinante" name="Aglutinante" sourceRef="GW_TipoMasa" targetRef="Task_AmasarSuave_Ag">
+      <conditionExpression xsi:type="tFormalExpression">Tipo de masa es Aglutinante</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="SF_TipoMasa_Cracker" name="Cracker" sourceRef="GW_TipoMasa" targetRef="Task_AmasarSuave_Cr">
+      <conditionExpression xsi:type="tFormalExpression">Tipo de masa es Cracker</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="SF_Ag1_Ag2" sourceRef="Task_AmasarSuave_Ag" targetRef="Task_AgregarHarina_Ag" />
+    <sequenceFlow id="SF_Ag2_Ag3" sourceRef="Task_AgregarHarina_Ag" targetRef="Task_NuevoAmasado_Ag" />
+    <sequenceFlow id="SF_Ag3_JoinMasa" sourceRef="Task_NuevoAmasado_Ag" targetRef="GW_Join_Masa" />
+    <sequenceFlow id="SF_Cr1_Cr2" sourceRef="Task_AmasarSuave_Cr" targetRef="Task_AgregarHarina_Cr" />
+    <sequenceFlow id="SF_Cr2_Cr3" sourceRef="Task_AgregarHarina_Cr" targetRef="Task_NuevoAmasado_Cr" />
+    <sequenceFlow id="SF_Cr3_Fermentacion" sourceRef="Task_NuevoAmasado_Cr" targetRef="Task_Fermentacion" />
+    <sequenceFlow id="SF_Fermentacion_AmasarFinal" sourceRef="Task_Fermentacion" targetRef="Task_AmasarFinalCr" />
+    <sequenceFlow id="SF_AmasarFinal_JoinMasa" sourceRef="Task_AmasarFinalCr" targetRef="GW_Join_Masa" />
+    <sequenceFlow id="SF_JoinMasa_EcharTolva" sourceRef="GW_Join_Masa" targetRef="Task_EcharTolva" />
+    <sequenceFlow id="SF_EcharTolva_Comprimir" sourceRef="Task_EcharTolva" targetRef="Task_Comprimir" />
+    <sequenceFlow id="SF_Comprimir_Calibrar" sourceRef="Task_Comprimir" targetRef="Task_Calibrar" />
+    <sequenceFlow id="SF_Calibrar_Relajar" sourceRef="Task_Calibrar" targetRef="Task_Relajar" />
+    <sequenceFlow id="SF_Relajar_Cortar" sourceRef="Task_Relajar" targetRef="Task_Cortar" />
+    <sequenceFlow id="SF_Cortar_GWSal" sourceRef="Task_Cortar" targetRef="GW_Sal" />
+    <sequenceFlow id="SF_Sal_SI_AgregarSal" name="Si" sourceRef="GW_Sal" targetRef="Task_AgregarSal">
+      <conditionExpression xsi:type="tFormalExpression">Se adiciona sal</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="SF_Sal_NO_JoinSal" name="No" sourceRef="GW_Sal" targetRef="GW_Join_Sal">
+      <conditionExpression xsi:type="tFormalExpression">No se adiciona sal</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="SF_AgregarSal_JoinSal" sourceRef="Task_AgregarSal" targetRef="GW_Join_Sal" />
+    <sequenceFlow id="SF_JoinSal_Hornear" sourceRef="GW_Join_Sal" targetRef="Task_Hornear" />
+    <sequenceFlow id="SF_Hornear_Empacar" sourceRef="Task_Hornear" targetRef="Task_Empacar" />
+    <sequenceFlow id="SF_Empacar_End" sourceRef="Task_Empacar" targetRef="End_ProductoTerminado" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collab_Galletas">
+      <bpmndi:BPMNShape id="Shape_Pool_Galletas" bpmnElement="Pool_Galletas" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="4230" height="880" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_Empaque" bpmnElement="Lane_Empaque" isHorizontal="true">
+        <dc:Bounds x="190" y="830" width="4200" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_Laminacion" bpmnElement="Lane_Laminacion" isHorizontal="true">
+        <dc:Bounds x="190" y="610" width="4200" height="220" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_Preparacion" bpmnElement="Lane_Preparacion" isHorizontal="true">
+        <dc:Bounds x="190" y="330" width="4200" height="280" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_Recepcion" bpmnElement="Lane_Recepcion" isHorizontal="true">
+        <dc:Bounds x="190" y="80" width="4200" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds x="240" y="217" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="229" y="260" width="59" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_RecepcionarMP" bpmnElement="Task_RecepcionarMP">
+        <dc:Bounds x="320" y="195" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_VerificarCert" bpmnElement="Task_VerificarCert">
+        <dc:Bounds x="520" y="195" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GW_TieneCert" bpmnElement="GW_TieneCert" isMarkerVisible="true">
+        <dc:Bounds x="730" y="210" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="711" y="267" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_RechazarProd" bpmnElement="Task_RechazarProd">
+        <dc:Bounds x="710" y="100" width="140" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Rechazo" bpmnElement="End_Rechazo" bioc:stroke="#cc0000" bioc:fill="#ffcccc">
+        <dc:Bounds x="900" y="117" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="888" y="160" width="60" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Pesar" bpmnElement="Task_Pesar">
+        <dc:Bounds x="830" y="195" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GW_EsHarina" bpmnElement="GW_EsHarina" isMarkerVisible="true">
+        <dc:Bounds x="1020" y="210" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1015" y="267" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Almacenar" bpmnElement="Task_Almacenar">
+        <dc:Bounds x="1000" y="100" width="140" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Almacen" bpmnElement="End_Almacen">
+        <dc:Bounds x="1190" y="117" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1176" y="160" width="65" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GW_TipoMasa" bpmnElement="GW_TipoMasa" isMarkerVisible="true">
+        <dc:Bounds x="1120" y="445" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1105" y="502" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AmasarSuave_Ag" bpmnElement="Task_AmasarSuave_Ag">
+        <dc:Bounds x="1220" y="330" width="165" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AgregarHarina_Ag" bpmnElement="Task_AgregarHarina_Ag">
+        <dc:Bounds x="1440" y="330" width="165" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_NuevoAmasado_Ag" bpmnElement="Task_NuevoAmasado_Ag">
+        <dc:Bounds x="1660" y="330" width="165" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AmasarSuave_Cr" bpmnElement="Task_AmasarSuave_Cr">
+        <dc:Bounds x="1220" y="500" width="165" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AgregarHarina_Cr" bpmnElement="Task_AgregarHarina_Cr">
+        <dc:Bounds x="1440" y="500" width="165" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_NuevoAmasado_Cr" bpmnElement="Task_NuevoAmasado_Cr">
+        <dc:Bounds x="1660" y="500" width="155" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Fermentacion" bpmnElement="Task_Fermentacion">
+        <dc:Bounds x="1870" y="500" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AmasarFinalCr" bpmnElement="Task_AmasarFinalCr">
+        <dc:Bounds x="2105" y="500" width="165" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GW_Join_Masa" bpmnElement="GW_Join_Masa" isMarkerVisible="true">
+        <dc:Bounds x="2330" y="445" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_EcharTolva" bpmnElement="Task_EcharTolva">
+        <dc:Bounds x="2440" y="680" width="155" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Comprimir" bpmnElement="Task_Comprimir">
+        <dc:Bounds x="2650" y="680" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Calibrar" bpmnElement="Task_Calibrar">
+        <dc:Bounds x="2855" y="680" width="155" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Relajar" bpmnElement="Task_Relajar">
+        <dc:Bounds x="3065" y="680" width="165" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Cortar" bpmnElement="Task_Cortar">
+        <dc:Bounds x="3285" y="680" width="175" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GW_Sal" bpmnElement="GW_Sal" isMarkerVisible="true">
+        <dc:Bounds x="3515" y="695" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3505" y="752" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AgregarSal" bpmnElement="Task_AgregarSal">
+        <dc:Bounds x="3490" y="620" width="140" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GW_Join_Sal" bpmnElement="GW_Join_Sal" isMarkerVisible="true">
+        <dc:Bounds x="3690" y="695" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Hornear" bpmnElement="Task_Hornear">
+        <dc:Bounds x="3795" y="680" width="165" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Empacar" bpmnElement="Task_Empacar">
+        <dc:Bounds x="4015" y="855" width="165" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_ProductoTerminado" bpmnElement="End_ProductoTerminado">
+        <dc:Bounds x="4237" y="877" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="4228" y="920" width="55" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_SF_Start_RecepcionMP" bpmnElement="SF_Start_RecepcionMP">
+        <di:waypoint x="276" y="235" />
+        <di:waypoint x="320" y="235" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_RecepcionMP_VerifCert" bpmnElement="SF_RecepcionMP_VerifCert">
+        <di:waypoint x="470" y="235" />
+        <di:waypoint x="520" y="235" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_VerifCert_GWCert" bpmnElement="SF_VerifCert_GWCert">
+        <di:waypoint x="680" y="235" />
+        <di:waypoint x="730" y="235" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_GWCert_NO_Rechazar" bpmnElement="SF_GWCert_NO_Rechazar">
+        <di:waypoint x="755" y="210" />
+        <di:waypoint x="755" y="170" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="765" y="185" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_GWCert_SI_Pesar" bpmnElement="SF_GWCert_SI_Pesar">
+        <di:waypoint x="780" y="235" />
+        <di:waypoint x="830" y="235" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="800" y="217" width="11" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Rechazar_End" bpmnElement="SF_Rechazar_End">
+        <di:waypoint x="850" y="135" />
+        <di:waypoint x="900" y="135" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Pesar_GWHarina" bpmnElement="SF_Pesar_GWHarina">
+        <di:waypoint x="970" y="235" />
+        <di:waypoint x="1020" y="235" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_GWHarina_NO_Almacenar" bpmnElement="SF_GWHarina_NO_Almacenar">
+        <di:waypoint x="1045" y="210" />
+        <di:waypoint x="1045" y="170" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1048" y="185" width="69" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_GWHarina_SI_TipoMasa" bpmnElement="SF_GWHarina_SI_TipoMasa">
+        <di:waypoint x="1045" y="260" />
+        <di:waypoint x="1045" y="470" />
+        <di:waypoint x="1120" y="470" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1057" y="350" width="53" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Almacenar_End" bpmnElement="SF_Almacenar_End">
+        <di:waypoint x="1140" y="135" />
+        <di:waypoint x="1190" y="135" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_TipoMasa_Aglutinante" bpmnElement="SF_TipoMasa_Aglutinante">
+        <di:waypoint x="1145" y="445" />
+        <di:waypoint x="1145" y="370" />
+        <di:waypoint x="1220" y="370" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1155" y="400" width="55" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_TipoMasa_Cracker" bpmnElement="SF_TipoMasa_Cracker">
+        <di:waypoint x="1145" y="495" />
+        <di:waypoint x="1145" y="540" />
+        <di:waypoint x="1220" y="540" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1154" y="508" width="40" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Ag1_Ag2" bpmnElement="SF_Ag1_Ag2">
+        <di:waypoint x="1385" y="370" />
+        <di:waypoint x="1440" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Ag2_Ag3" bpmnElement="SF_Ag2_Ag3">
+        <di:waypoint x="1605" y="370" />
+        <di:waypoint x="1660" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Ag3_JoinMasa" bpmnElement="SF_Ag3_JoinMasa">
+        <di:waypoint x="1825" y="370" />
+        <di:waypoint x="2355" y="370" />
+        <di:waypoint x="2355" y="445" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cr1_Cr2" bpmnElement="SF_Cr1_Cr2">
+        <di:waypoint x="1385" y="540" />
+        <di:waypoint x="1440" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cr2_Cr3" bpmnElement="SF_Cr2_Cr3">
+        <di:waypoint x="1605" y="540" />
+        <di:waypoint x="1660" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cr3_Fermentacion" bpmnElement="SF_Cr3_Fermentacion">
+        <di:waypoint x="1815" y="540" />
+        <di:waypoint x="1870" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Fermentacion_AmasarFinal" bpmnElement="SF_Fermentacion_AmasarFinal">
+        <di:waypoint x="2050" y="540" />
+        <di:waypoint x="2105" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_AmasarFinal_JoinMasa" bpmnElement="SF_AmasarFinal_JoinMasa">
+        <di:waypoint x="2270" y="540" />
+        <di:waypoint x="2355" y="540" />
+        <di:waypoint x="2355" y="495" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_JoinMasa_EcharTolva" bpmnElement="SF_JoinMasa_EcharTolva">
+        <di:waypoint x="2355" y="495" />
+        <di:waypoint x="2355" y="720" />
+        <di:waypoint x="2440" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_EcharTolva_Comprimir" bpmnElement="SF_EcharTolva_Comprimir">
+        <di:waypoint x="2595" y="720" />
+        <di:waypoint x="2650" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Comprimir_Calibrar" bpmnElement="SF_Comprimir_Calibrar">
+        <di:waypoint x="2800" y="720" />
+        <di:waypoint x="2855" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Calibrar_Relajar" bpmnElement="SF_Calibrar_Relajar">
+        <di:waypoint x="3010" y="720" />
+        <di:waypoint x="3065" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Relajar_Cortar" bpmnElement="SF_Relajar_Cortar">
+        <di:waypoint x="3230" y="720" />
+        <di:waypoint x="3285" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cortar_GWSal" bpmnElement="SF_Cortar_GWSal">
+        <di:waypoint x="3460" y="720" />
+        <di:waypoint x="3515" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Sal_SI_AgregarSal" bpmnElement="SF_Sal_SI_AgregarSal">
+        <di:waypoint x="3540" y="695" />
+        <di:waypoint x="3540" y="680" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3554" y="685" width="11" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Sal_NO_JoinSal" bpmnElement="SF_Sal_NO_JoinSal">
+        <di:waypoint x="3565" y="720" />
+        <di:waypoint x="3690" y="720" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3621" y="702" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_AgregarSal_JoinSal" bpmnElement="SF_AgregarSal_JoinSal">
+        <di:waypoint x="3630" y="650" />
+        <di:waypoint x="3715" y="650" />
+        <di:waypoint x="3715" y="695" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_JoinSal_Hornear" bpmnElement="SF_JoinSal_Hornear">
+        <di:waypoint x="3740" y="720" />
+        <di:waypoint x="3795" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Hornear_Empacar" bpmnElement="SF_Hornear_Empacar">
+        <di:waypoint x="3960" y="720" />
+        <di:waypoint x="4097" y="720" />
+        <di:waypoint x="4097" y="855" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Empacar_End" bpmnElement="SF_Empacar_End">
+        <di:waypoint x="4180" y="895" />
+        <di:waypoint x="4237" y="895" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

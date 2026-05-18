@@ -1,0 +1,12 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Grabaciones de video (demasiado grandes para GitHub, >100MB)
+SAP Signavio TTT/5. Recordings/
+*.mp4
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+   xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+   xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+   xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+   xmlns:signavio="http://www.signavio.com"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   exporter="Signavio Process Editor, http://www.signavio.com"
+   exporterVersion="26.18.0"
+   expressionLanguage="http://www.w3.org/TR/XPath"
+   id="sid-indupro-asis-definitions"
+   targetNamespace="http://www.signavio.com"
+   typeLanguage="http://www.w3.org/2001/XMLSchema"
+   xml:lang="es-EC"
+   xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd">
+
+  <!--
+    =====================================================================
+    INDUPRO S.A. — Proceso de Gestión de Pedidos (AS-IS)
+    SAP Signavio Regional Challenge 2026
+    Modelado BPMN 2.0 — Estado actual del proceso SIN mejoras
+    =====================================================================
+
+    PARÁMETROS DE SIMULACIÓN (Escenario "AS-IS Base"):
+      Duración de ventana: 480 min (1 día hábil)
+      Frecuencia de casos: 4 pedidos / día
+      Tiempo total esperado (ruta fabricación + reproceso): ~555 min
+      Costo total esperado por pedido: ~$105.91
+
+    RESTRICCIONES INAMOVIBLES REFLEJADAS EN EL MODELO:
+      - Fabricación por lote: 120 min (restricción técnica)
+      - Inspección de calidad: 30 min (requisito regulatorio)
+      - Ventana de despacho: 07:00–14:00 (Logística)
+
+    GATEWAYS XOR — Probabilidades documentadas del caso:
+      GW-01 ¿Hay stock disponible? → SÍ: 65% / NO: 35%
+      GW-02 ¿Pasa control de calidad? → APRUEBA: 82% / RECHAZA: 18%
+    =====================================================================
+  -->
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- COLABORACIÓN (Pool único: INDUPRO S.A.)                        -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <collaboration id="sid-collab-indupro-asis">
+    <extensionElements>
+      <signavio:signavioDiagramMetaData metaKey="revisionid" metaValue="INDUPRO-ASIS-v1"/>
+    </extensionElements>
+    <participant
+       id="sid-pool-indupro"
+       name="INDUPRO S.A."
+       processRef="sid-process-indupro-asis">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </participant>
+  </collaboration>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- PROCESO PRINCIPAL                                               -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <process
+     id="sid-process-indupro-asis"
+     isClosed="false"
+     isExecutable="false"
+     name="Proceso de Gestión de Pedidos — AS-IS"
+     processType="None">
+
+    <extensionElements/>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- SWIMLANES (7 departamentos)                                  -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <laneSet id="sid-laneset-asis">
+
+      <lane id="sid-lane-ventas" name="Ejecutivo de Ventas">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-start-solicitud</flowNodeRef>
+        <flowNodeRef>sid-task-1-recepcion</flowNodeRef>
+        <flowNodeRef>sid-task-2-validacion</flowNodeRef>
+        <flowNodeRef>sid-gw-join-rutas</flowNodeRef>
+        <flowNodeRef>sid-task-6a-confirmacion</flowNodeRef>
+      </lane>
+
+      <lane id="sid-lane-finanzas" name="Analista de Finanzas">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-task-3-credito</flowNodeRef>
+        <flowNodeRef>sid-task-13-factura</flowNodeRef>
+        <flowNodeRef>sid-end-pedido</flowNodeRef>
+      </lane>
+
+      <lane id="sid-lane-inventarios" name="Coordinador de Inventarios">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-task-4-stock</flowNodeRef>
+        <flowNodeRef>sid-gw-stock</flowNodeRef>
+      </lane>
+
+      <lane id="sid-lane-planificacion" name="Planificador de Producción">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-task-6b-planificacion</flowNodeRef>
+      </lane>
+
+      <lane id="sid-lane-planta" name="Operario de Planta">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-task-7-fabricacion</flowNodeRef>
+        <flowNodeRef>sid-task-9b-reproceso</flowNodeRef>
+      </lane>
+
+      <lane id="sid-lane-calidad" name="Inspector de Calidad">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-task-8-inspeccion</flowNodeRef>
+        <flowNodeRef>sid-gw-calidad</flowNodeRef>
+      </lane>
+
+      <lane id="sid-lane-logistica" name="Coordinador de Logística">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-task-10-empaque</flowNodeRef>
+        <flowNodeRef>sid-task-11-transportista</flowNodeRef>
+        <flowNodeRef>sid-task-12-entrega</flowNodeRef>
+      </lane>
+
+    </laneSet>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- EVENTO DE INICIO — Message (solicitud del cliente)          -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <startEvent
+       id="sid-start-solicitud"
+       name="Solicitud de&#10;pedido recibida">
+      <documentation>
+        Tipo: Message Start Event.
+        El cliente envía su solicitud por correo electrónico, llamada telefónica o portal web.
+        El proceso inicia cuando la solicitud es recibida por el área de Ventas.
+        [SIMULACIÓN] Frecuencia de instancias: 4 pedidos/día — ventana 480 min.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <outgoing>sf-start-task1</outgoing>
+      <messageEventDefinition id="sid-msg-def-solicitud"/>
+    </startEvent>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 1 — Recepcionar solicitud del cliente                  -->
+    <!-- Lane: Ventas y Servicio al Cliente                          -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-1-recepcion"
+       isForCompensation="false"
+       name="Recepcionar solicitud&#10;del cliente"
+       startQuantity="1">
+      <documentation>
+        Responsable: Ejecutivo de Ventas
+        Sistema/Herramienta: Correo electrónico / Teléfono
+        Duración AS-IS: 30 min (distribución fija)
+        Costo por hora: $12.00
+        Costo de la actividad: $6.00
+        Tipo BPMN: User Task (actividad manual)
+        Clasificación: Actividad con valor agregado (VA)
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-start-task1</incoming>
+      <outgoing>sf-task1-task2</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 2 — Validar datos del pedido manualmente               -->
+    <!-- Lane: Ventas y Servicio al Cliente                          -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-2-validacion"
+       isForCompensation="false"
+       name="Validar datos del pedido&#10;manualmente (Excel)"
+       startQuantity="1">
+      <documentation>
+        Responsable: Ejecutivo de Ventas
+        Sistema/Herramienta: Hoja de Excel (sin integración)
+        Duración AS-IS: 45 min (distribución fija)
+        Costo por hora: $12.00
+        Costo de la actividad: $9.00
+        Tipo BPMN: User Task (actividad manual)
+        Clasificación: Actividad con valor agregado parcial — propenso a errores (~15% de error)
+        PROBLEMA IDENTIFICADO (P1): Ingreso manual genera errores de transcripción;
+        hasta 4 horas adicionales por corrección. Sin integración con sistema central.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-task1-task2</incoming>
+      <outgoing>sf-task2-task3</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 3 — Verificar crédito del cliente                      -->
+    <!-- Lane: Finanzas y Facturación                                -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-3-credito"
+       isForCompensation="false"
+       name="Verificar crédito&#10;del cliente"
+       startQuantity="1">
+      <documentation>
+        Responsable: Analista de Finanzas
+        Sistema/Herramienta: Sistema Financiero Manual (no integrado al flujo de ventas)
+        Duración AS-IS: 60 min (distribución fija)
+        Costo por hora: $13.00
+        Costo de la actividad: $13.00
+        Tipo BPMN: User Task (actividad manual)
+        Clasificación: CUELLO DE BOTELLA #1 — proceso bloqueado durante 6-8h hábiles si
+        el analista no está disponible. Sin integración con sistema de pedidos.
+        PROBLEMA IDENTIFICADO (P2): Verificación secuencial sin conexión al flujo;
+        podría paralelizarse con consulta de stock (P3).
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-task2-task3</incoming>
+      <outgoing>sf-task3-task4</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 4 — Consultar disponibilidad de stock en bodega        -->
+    <!-- Lane: Coordinación de Inventarios                           -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-4-stock"
+       isForCompensation="false"
+       name="Consultar disponibilidad&#10;de stock en bodega"
+       startQuantity="1">
+      <documentation>
+        Responsable: Coordinador de Inventarios
+        Sistema/Herramienta: Registro físico en bodega + ERP legacy (fuentes separadas)
+        Duración AS-IS: 50 min (distribución fija)
+        Costo por hora: $10.00
+        Costo de la actividad: $8.33
+        Tipo BPMN: User Task (actividad manual)
+        Clasificación: CUELLO DE BOTELLA #2 — doble fuente de verdad no integrada.
+        PROBLEMA IDENTIFICADO (P3): Discrepancias frecuentes entre registro físico y ERP
+        provocan órdenes de producción innecesarias. Sin integración en tiempo real.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-task3-task4</incoming>
+      <outgoing>sf-task4-gwstock</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- GATEWAY XOR-01 — ¿Hay stock disponible?                     -->
+    <!-- Lane: Coordinación de Inventarios                           -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <exclusiveGateway
+       id="sid-gw-stock"
+       name="¿Hay stock&#10;disponible?"
+       gatewayDirection="Diverging">
+      <documentation>
+        Tipo: Exclusive Gateway (XOR) — Decisión excluyente
+        Duración AS-IS: 5 min (distribución fija)
+        Costo por hora: $10.00
+        Costo de la actividad: $0.83
+        [SIMULACIÓN — PROBABILIDADES]:
+          Ruta SÍ (stock disponible): 65%
+          Ruta NO (sin stock, requiere fabricación): 35%
+        IMPLICACIÓN ANALÍTICA: el 35% de pedidos activa la ruta larga (+185 min).
+        Una mejora en la precisión del inventario reduciría este porcentaje directamente.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-task4-gwstock</incoming>
+      <outgoing>sf-gwstock-si-joinrutas</outgoing>
+      <outgoing>sf-gwstock-no-task6b</outgoing>
+    </exclusiveGateway>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 6B — Programar orden de producción                     -->
+    <!-- Lane: Planificación de Producción                           -->
+    <!-- Ruta: NO (sin stock) — 35% de los pedidos                  -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-6b-planificacion"
+       isForCompensation="false"
+       name="Programar orden&#10;de producción"
+       startQuantity="1">
+      <documentation>
+        Responsable: Planificador de Producción
+        Sistema/Herramienta: Planilla de producción manual (sin visibilidad de capacidad real)
+        Duración AS-IS: 40 min (distribución fija)
+        Costo por hora: $14.00
+        Costo de la actividad: $9.33
+        Ruta activa: 35% de los pedidos (sin stock disponible)
+        Tipo BPMN: User Task (actividad manual)
+        PROBLEMA IDENTIFICADO (P6): Sin sistema de planificación en tiempo real;
+        la capacidad de planta (78% utilización) se sub-optimiza por falta de visibilidad.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-gwstock-no-task6b</incoming>
+      <outgoing>sf-task6b-task7</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 7 — Fabricar el producto                               -->
+    <!-- Lane: Planta de Manufactura                                 -->
+    <!-- RESTRICCIÓN TÉCNICA INAMOVIBLE: 120 min                    -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-7-fabricacion"
+       isForCompensation="false"
+       name="Fabricar el producto"
+       startQuantity="1">
+      <documentation>
+        Responsable: Operarios de Planta (6 disponibles, turno 8h)
+        Sistema/Herramienta: Órdenes de trabajo impresas
+        Duración AS-IS: 120 min (distribución fija) — RESTRICCIÓN TÉCNICA INAMOVIBLE
+        Costo por hora: $8.00
+        Costo de la actividad: $16.00
+        Ruta activa: 35% de los pedidos (requieren fabricación)
+        Tipo BPMN: User Task (actividad manual — proceso físico de manufactura)
+        NOTA: Este tiempo NO puede reducirse en el rediseño TO-BE.
+        Sin control de calidad en-proceso (QC solo al final → alta tasa de reproceso).
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-task6b-task7</incoming>
+      <outgoing>sf-task7-task8</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 8 — Inspeccionar y liberar calidad                     -->
+    <!-- Lane: Control de Calidad                                    -->
+    <!-- RESTRICCIÓN REGULATORIA INAMOVIBLE: 30 min                 -->
+    <!-- Recibe flujo de Task_7 Y del reproceso Task_9B (loop)      -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-8-inspeccion"
+       isForCompensation="false"
+       name="Inspeccionar y liberar&#10;calidad del lote"
+       startQuantity="1">
+      <documentation>
+        Responsable: Inspector de Calidad (2 disponibles)
+        Sistema/Herramienta: Checklist físico impreso
+        Duración AS-IS: 30 min (distribución fija) — REQUISITO REGULATORIO INAMOVIBLE
+        Costo por hora: $11.00
+        Costo de la actividad: $5.50
+        Tipo BPMN: User Task (actividad manual)
+        MÚLTIPLES INCOMING: recibe flujo de Task_7 (fabricación normal) Y
+        de Task_9B (post-reproceso) — ciclo de corrección.
+        PROBLEMA: QC reactivo (solo al final); defectos detectados tardíamente amplían el costo.
+        NOTA: Este tiempo NO puede reducirse en el rediseño TO-BE.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-task7-task8</incoming>
+      <incoming>sf-task9b-task8</incoming>
+      <outgoing>sf-task8-gwcalidad</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- GATEWAY XOR-02 — ¿Pasa control de calidad?                 -->
+    <!-- Lane: Control de Calidad                                    -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <exclusiveGateway
+       id="sid-gw-calidad"
+       name="¿Pasa control&#10;de calidad?"
+       gatewayDirection="Diverging">
+      <documentation>
+        Tipo: Exclusive Gateway (XOR) — Decisión excluyente
+        Duración AS-IS: 5 min (distribución fija)
+        Costo por hora: $11.00
+        Costo de la actividad: $0.92
+        [SIMULACIÓN — PROBABILIDADES]:
+          Ruta APRUEBA: 82%
+          Ruta RECHAZA (reproceso): 18%
+        CUELLO DE BOTELLA #3: 18 de cada 100 lotes generan reproceso de 90 min.
+        Escala mensual: 1,200 × 35% × 18% = ~75.6 reprocesos/mes.
+        Costo mensual de reprocesos: ~$907/mes.
+        CAUSA RAÍZ: No existe control en-proceso durante la fabricación.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-task8-gwcalidad</incoming>
+      <outgoing>sf-gwcalidad-aprueba-joinrutas</outgoing>
+      <outgoing>sf-gwcalidad-rechaza-task9b</outgoing>
+    </exclusiveGateway>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 9B — Reprocesar lote rechazado                         -->
+    <!-- Lane: Planta de Manufactura                                 -->
+    <!-- Ruta: RECHAZA — 18% de lotes fabricados                    -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-9b-reproceso"
+       isForCompensation="false"
+       name="Reprocesar lote&#10;rechazado"
+       startQuantity="1">
+      <documentation>
+        Responsable: Operarios de Planta + Inspector de Calidad
+        Sistema/Herramienta: Manual (sin sistema de apoyo)
+        Duración AS-IS: 90 min (distribución fija)
+        Costo por hora: $8.00
+        Costo de la actividad: $12.00
+        Ruta activa: 18% de los lotes que pasan por fabricación
+        Tipo BPMN: User Task (actividad manual — correctiva)
+        Clasificación: Actividad SIN valor agregado (NVA) — rework completo
+        FLUJO: Tras reproceso, el lote vuelve a Task_8 (inspección) para nueva evaluación.
+        IMPACTO: +90 min al ciclo del pedido afectado; acumulado mensual ~$907.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffcccc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-gwcalidad-rechaza-task9b</incoming>
+      <outgoing>sf-task9b-task8</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- GATEWAY XOR-JOIN — Convergencia de rutas                    -->
+    <!-- Lane: Ventas y Servicio al Cliente                          -->
+    <!-- Une: ruta SÍ-stock (65%) + ruta fabricación aprobada       -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <exclusiveGateway
+       id="sid-gw-join-rutas"
+       name=""
+       gatewayDirection="Converging">
+      <documentation>
+        Tipo: Exclusive Gateway (XOR) — Convergente (join)
+        Punto de unión de dos rutas:
+          1. Ruta directa: GW_Stock SÍ (65% de pedidos — hay stock)
+          2. Ruta fabricación: GW_Calidad APRUEBA (82% × 35% de pedidos)
+        Después de este join, el proceso continúa con la confirmación al cliente.
+        Sin costo/tiempo propio — elemento estructural BPMN.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-gwstock-si-joinrutas</incoming>
+      <incoming>sf-gwcalidad-aprueba-joinrutas</incoming>
+      <outgoing>sf-joinrutas-task6a</outgoing>
+    </exclusiveGateway>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 6A — Confirmar pedido al cliente                       -->
+    <!-- Lane: Ventas y Servicio al Cliente                          -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-6a-confirmacion"
+       isForCompensation="false"
+       name="Confirmar pedido&#10;al cliente"
+       startQuantity="1">
+      <documentation>
+        Responsable: Ejecutivo de Ventas
+        Sistema/Herramienta: Correo electrónico (sin automatización)
+        Duración AS-IS: 20 min (distribución fija)
+        Costo por hora: $12.00
+        Costo de la actividad: $4.00
+        Tipo BPMN: User Task (actividad manual)
+        PROBLEMA IDENTIFICADO (P4): Comunicación por correo sin trazabilidad.
+        El cliente puede esperar horas sin saber el estado de su pedido.
+        Sin notificaciones automáticas o intermedias durante el proceso.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-joinrutas-task6a</incoming>
+      <outgoing>sf-task6a-task10</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 10 — Empacar y preparar para despacho                  -->
+    <!-- Lane: Logística y Distribución                              -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-10-empaque"
+       isForCompensation="false"
+       name="Empacar y preparar&#10;para despacho"
+       startQuantity="1">
+      <documentation>
+        Responsable: Operarios de Logística
+        Sistema/Herramienta: Manual (sin sistema de etiquetado integrado)
+        Duración AS-IS: 25 min (distribución fija)
+        Costo por hora: $10.00
+        Costo de la actividad: $4.17
+        Tipo BPMN: User Task (actividad manual)
+        Clasificación: Actividad con valor agregado (VA)
+        RESTRICCIÓN LOGÍSTICA: Despacho solo entre 07:00 y 14:00.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-task6a-task10</incoming>
+      <outgoing>sf-task10-task11</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 11 — Asignar transportista y programar entrega         -->
+    <!-- Lane: Logística y Distribución                              -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-11-transportista"
+       isForCompensation="false"
+       name="Asignar transportista&#10;y programar entrega"
+       startQuantity="1">
+      <documentation>
+        Responsable: Coordinador de Logística
+        Sistema/Herramienta: Correo electrónico / Teléfono (sin TMS)
+        Duración AS-IS: 30 min (distribución fija)
+        Costo por hora: $10.00
+        Costo de la actividad: $5.00
+        Tipo BPMN: User Task (actividad manual)
+        PROBLEMA IDENTIFICADO (P7): Sin sistema de gestión de transporte (TMS).
+        Asignación por llamadas telefónicas sin visibilidad de tracking.
+        Sin notificaciones automáticas al cliente sobre hora de entrega estimada.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-task10-task11</incoming>
+      <outgoing>sf-task11-task12</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 12 — Entregar al cliente y firmar conformidad          -->
+    <!-- Lane: Logística y Distribución                              -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-12-entrega"
+       isForCompensation="false"
+       name="Entregar al cliente&#10;y firmar conformidad"
+       startQuantity="1">
+      <documentation>
+        Responsable: Transportista / Coordinador de Logística
+        Sistema/Herramienta: Guía de remisión impresa (papel)
+        Duración AS-IS: 45 min (distribución fija) — incluye tiempo de traslado
+        Costo por hora: $10.00
+        Costo de la actividad: $7.50
+        Tipo BPMN: User Task (actividad manual — entrega física)
+        Clasificación: Actividad con valor agregado (VA)
+        Sin firma digital; guía en papel puede perderse o dañarse.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-task11-task12</incoming>
+      <outgoing>sf-task12-task13</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 13 — Generar y enviar factura                          -->
+    <!-- Lane: Finanzas y Facturación                                -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <task
+       completionQuantity="1"
+       id="sid-task-13-factura"
+       isForCompensation="false"
+       name="Generar y enviar&#10;factura al cliente"
+       startQuantity="1">
+      <documentation>
+        Responsable: Analista de Finanzas
+        Sistema/Herramienta: Sistema de facturación (no integrado automáticamente)
+        Duración AS-IS: 20 min (distribución fija)
+        Costo por hora: $13.00
+        Costo de la actividad: $4.33
+        Tipo BPMN: User Task (actividad manual)
+        Activación: solo después de confirmación de entrega (manual).
+        Sin generación automática al cierre del proceso logístico.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-task12-task13</incoming>
+      <outgoing>sf-task13-end</outgoing>
+    </task>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- EVENTO DE FIN                                               -->
+    <!-- Lane: Finanzas y Facturación                                -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <endEvent
+       id="sid-end-pedido"
+       name="Pedido entregado&#10;y facturado">
+      <documentation>
+        Fin del proceso: el cliente recibió el producto y la factura fue emitida.
+        [SIMULACIÓN — RESULTADOS ESPERADOS AS-IS]:
+          Tiempo total de ciclo (ruta fabricación + reproceso): ~555 min
+          Costo total por pedido: ~$105.91
+          Tiempo sin valor agregado (NVA): ~210 min (38% del ciclo)
+          Tasa de reproceso promedio: 18% de los lotes fabricados
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-task13-end</incoming>
+    </endEvent>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SEQUENCE FLOWS                                              -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Flujo principal: Inicio → Task 1 → Task 2 -->
+    <sequenceFlow id="sf-start-task1" name=""
+       sourceRef="sid-start-solicitud"
+       targetRef="sid-task-1-recepcion">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <sequenceFlow id="sf-task1-task2" name=""
+       sourceRef="sid-task-1-recepcion"
+       targetRef="sid-task-2-validacion">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- Ventas → Finanzas (Task 2 → Task 3) -->
+    <sequenceFlow id="sf-task2-task3" name=""
+       sourceRef="sid-task-2-validacion"
+       targetRef="sid-task-3-credito">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- Finanzas → Inventarios (Task 3 → Task 4) -->
+    <sequenceFlow id="sf-task3-task4" name=""
+       sourceRef="sid-task-3-credito"
+       targetRef="sid-task-4-stock">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- Task 4 → GW_Stock -->
+    <sequenceFlow id="sf-task4-gwstock" name=""
+       sourceRef="sid-task-4-stock"
+       targetRef="sid-gw-stock">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- GW_Stock → SÍ: hay stock (65%) → GW_JoinRutas (salta a Ventas) -->
+    <sequenceFlow id="sf-gwstock-si-joinrutas" name="Sí&#10;(hay stock — 65%)"
+       sourceRef="sid-gw-stock"
+       targetRef="sid-gw-join-rutas">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <conditionExpression xsi:type="tFormalExpression">
+        Hay stock disponible en bodega (probabilidad: 65%)
+      </conditionExpression>
+    </sequenceFlow>
+
+    <!-- GW_Stock → NO: sin stock (35%) → Task_6B (Planificación) -->
+    <sequenceFlow id="sf-gwstock-no-task6b" name="No&#10;(sin stock — 35%)"
+       sourceRef="sid-gw-stock"
+       targetRef="sid-task-6b-planificacion">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <conditionExpression xsi:type="tFormalExpression">
+        No hay stock disponible; se debe fabricar el producto (probabilidad: 35%)
+      </conditionExpression>
+    </sequenceFlow>
+
+    <!-- Task_6B → Task_7 (Planificación → Planta) -->
+    <sequenceFlow id="sf-task6b-task7" name=""
+       sourceRef="sid-task-6b-planificacion"
+       targetRef="sid-task-7-fabricacion">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- Task_7 → Task_8 (Planta → Calidad) -->
+    <sequenceFlow id="sf-task7-task8" name=""
+       sourceRef="sid-task-7-fabricacion"
+       targetRef="sid-task-8-inspeccion">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- Task_8 → GW_Calidad -->
+    <sequenceFlow id="sf-task8-gwcalidad" name=""
+       sourceRef="sid-task-8-inspeccion"
+       targetRef="sid-gw-calidad">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- GW_Calidad → APRUEBA (82%) → GW_JoinRutas (salta a Ventas) -->
+    <sequenceFlow id="sf-gwcalidad-aprueba-joinrutas" name="Aprueba&#10;(82%)"
+       sourceRef="sid-gw-calidad"
+       targetRef="sid-gw-join-rutas">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <conditionExpression xsi:type="tFormalExpression">
+        El lote aprueba el control de calidad (probabilidad: 82%)
+      </conditionExpression>
+    </sequenceFlow>
+
+    <!-- GW_Calidad → RECHAZA (18%) → Task_9B (reproceso en Planta) -->
+    <sequenceFlow id="sf-gwcalidad-rechaza-task9b" name="Rechaza&#10;(18%)"
+       sourceRef="sid-gw-calidad"
+       targetRef="sid-task-9b-reproceso">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <conditionExpression xsi:type="tFormalExpression">
+        El lote no aprueba el control de calidad; requiere reproceso (probabilidad: 18%)
+      </conditionExpression>
+    </sequenceFlow>
+
+    <!-- Task_9B → Task_8 (loop: reproceso vuelve a inspección) -->
+    <sequenceFlow id="sf-task9b-task8" name="Vuelve a&#10;inspección"
+       sourceRef="sid-task-9b-reproceso"
+       targetRef="sid-task-8-inspeccion">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- GW_JoinRutas → Task_6A (confirmación al cliente) -->
+    <sequenceFlow id="sf-joinrutas-task6a" name=""
+       sourceRef="sid-gw-join-rutas"
+       targetRef="sid-task-6a-confirmacion">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- Task_6A → Task_10 (Ventas → Logística) -->
+    <sequenceFlow id="sf-task6a-task10" name=""
+       sourceRef="sid-task-6a-confirmacion"
+       targetRef="sid-task-10-empaque">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- Task_10 → Task_11 → Task_12 (Logística) -->
+    <sequenceFlow id="sf-task10-task11" name=""
+       sourceRef="sid-task-10-empaque"
+       targetRef="sid-task-11-transportista">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <sequenceFlow id="sf-task11-task12" name=""
+       sourceRef="sid-task-11-transportista"
+       targetRef="sid-task-12-entrega">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- Task_12 → Task_13 (Logística → Finanzas) -->
+    <sequenceFlow id="sf-task12-task13" name=""
+       sourceRef="sid-task-12-entrega"
+       targetRef="sid-task-13-factura">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- Task_13 → Fin -->
+    <sequenceFlow id="sf-task13-end" name=""
+       sourceRef="sid-task-13-factura"
+       targetRef="sid-end-pedido">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+  </process>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- BPMN DIAGRAM INTERCHANGE (DI) — Layout visual                  -->
+  <!--                                                                 -->
+  <!-- Canvas: 2480 × 1060 px                                          -->
+  <!-- Pool: 7 swimlanes horizontales, 140px de alto cada una         -->
+  <!--                                                                 -->
+  <!-- Leyenda de coordenadas (y desde arriba):                        -->
+  <!--   Lane Ventas       y=40   — center_y=112                       -->
+  <!--   Lane Finanzas     y=185  — center_y=257                       -->
+  <!--   Lane Inventarios  y=330  — center_y=402                       -->
+  <!--   Lane Planificacion y=475 — center_y=547                       -->
+  <!--   Lane Planta       y=620  — center_y=692                       -->
+  <!--   Lane Calidad      y=765  — center_y=837                       -->
+  <!--   Lane Logistica    y=910  — center_y=982                       -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <bpmndi:BPMNDiagram id="sid-diagram-indupro-asis">
+    <bpmndi:BPMNPlane
+       bpmnElement="sid-collab-indupro-asis"
+       id="sid-plane-indupro-asis">
+
+      <!-- Pool shape -->
+      <bpmndi:BPMNShape
+         bpmnElement="sid-pool-indupro"
+         id="sid-pool-indupro_gui"
+         isHorizontal="true">
+        <omgdc:Bounds height="1050" width="2460" x="80" y="40"/>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="140" width="24" x="80" y="470"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- ──────── Lane shapes ──────── -->
+      <bpmndi:BPMNShape bpmnElement="sid-lane-ventas" id="sid-lane-ventas_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2430" x="110" y="40"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="116" y="68"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-finanzas" id="sid-lane-finanzas_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2430" x="110" y="185"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="116" y="213"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-inventarios" id="sid-lane-inventarios_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2430" x="110" y="330"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="116" y="358"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-planificacion" id="sid-lane-planificacion_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2430" x="110" y="475"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="116" y="503"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-planta" id="sid-lane-planta_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2430" x="110" y="620"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="116" y="648"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-calidad" id="sid-lane-calidad_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2430" x="110" y="765"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="116" y="793"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-logistica" id="sid-lane-logistica_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2430" x="110" y="910"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="116" y="938"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- ──────── NODOS (Tasks, Gateways, Events) ──────── -->
+
+      <!-- Start Event — Lane Ventas (center_y=112) -->
+      <bpmndi:BPMNShape bpmnElement="sid-start-solicitud" id="sid-start-solicitud_gui">
+        <omgdc:Bounds height="36" width="36" x="182" y="94"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="24" width="80" x="160" y="135"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 1 — Lane Ventas (center_y=112, center_x=320) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-1-recepcion" id="sid-task-1-recepcion_gui">
+        <omgdc:Bounds height="70" width="130" x="255" y="77"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="260" y="91"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 2 — Lane Ventas (center_y=112, center_x=490) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-2-validacion" id="sid-task-2-validacion_gui">
+        <omgdc:Bounds height="70" width="130" x="425" y="77"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="430" y="91"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 3 — Lane Finanzas (center_y=257, center_x=660) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-3-credito" id="sid-task-3-credito_gui">
+        <omgdc:Bounds height="70" width="130" x="595" y="222"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="600" y="236"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 4 — Lane Inventarios (center_y=402, center_x=830) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-4-stock" id="sid-task-4-stock_gui">
+        <omgdc:Bounds height="70" width="130" x="765" y="367"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="770" y="381"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- GW_Stock (XOR-01) — Lane Inventarios (center_y=402, center_x=975) -->
+      <bpmndi:BPMNShape bpmnElement="sid-gw-stock" id="sid-gw-stock_gui" isMarkerVisible="true">
+        <omgdc:Bounds height="40" width="40" x="955" y="382"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="100" x="926" y="426"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 6B — Lane Planificacion (center_y=547, center_x=1100) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-6b-planificacion" id="sid-task-6b-planificacion_gui">
+        <omgdc:Bounds height="70" width="130" x="1035" y="512"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="1040" y="526"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 7 — Lane Planta (center_y=692, center_x=1270) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-7-fabricacion" id="sid-task-7-fabricacion_gui">
+        <omgdc:Bounds height="70" width="130" x="1205" y="657"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="24" width="120" x="1210" y="678"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 8 — Lane Calidad (center_y=837, center_x=1270) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-8-inspeccion" id="sid-task-8-inspeccion_gui">
+        <omgdc:Bounds height="70" width="130" x="1205" y="802"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="1210" y="814"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- GW_Calidad (XOR-02) — Lane Calidad (center_y=837, center_x=1430) -->
+      <bpmndi:BPMNShape bpmnElement="sid-gw-calidad" id="sid-gw-calidad_gui" isMarkerVisible="true">
+        <omgdc:Bounds height="40" width="40" x="1410" y="817"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="100" x="1381" y="861"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 9B — Lane Planta (center_y=692, center_x=1565) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-9b-reproceso" id="sid-task-9b-reproceso_gui">
+        <omgdc:Bounds height="70" width="130" x="1500" y="657"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="1505" y="671"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- GW_JoinRutas (XOR-JOIN) — Lane Ventas (center_y=112, center_x=1740) -->
+      <bpmndi:BPMNShape bpmnElement="sid-gw-join-rutas" id="sid-gw-join-rutas_gui" isMarkerVisible="true">
+        <omgdc:Bounds height="40" width="40" x="1720" y="92"/>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 6A — Lane Ventas (center_y=112, center_x=1870) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-6a-confirmacion" id="sid-task-6a-confirmacion_gui">
+        <omgdc:Bounds height="70" width="130" x="1805" y="77"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="1810" y="91"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 10 — Lane Logistica (center_y=982, center_x=1870) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-10-empaque" id="sid-task-10-empaque_gui">
+        <omgdc:Bounds height="70" width="130" x="1805" y="947"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="1810" y="961"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 11 — Lane Logistica (center_y=982, center_x=2050) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-11-transportista" id="sid-task-11-transportista_gui">
+        <omgdc:Bounds height="70" width="130" x="1985" y="947"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="1990" y="961"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 12 — Lane Logistica (center_y=982, center_x=2230) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-12-entrega" id="sid-task-12-entrega_gui">
+        <omgdc:Bounds height="70" width="130" x="2165" y="947"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="2170" y="961"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 13 — Lane Finanzas (center_y=257, center_x=2230) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-13-factura" id="sid-task-13-factura_gui">
+        <omgdc:Bounds height="70" width="130" x="2165" y="222"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="2170" y="236"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- End Event — Lane Finanzas (center_y=257, center_x=2390) -->
+      <bpmndi:BPMNShape bpmnElement="sid-end-pedido" id="sid-end-pedido_gui">
+        <omgdc:Bounds height="36" width="36" x="2372" y="239"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="24" width="80" x="2350" y="280"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- ──────── EDGES (Sequence Flows) ──────── -->
+
+      <!-- Start → Task 1 (horizontal, Lane Ventas) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-start-task1" id="sf-start-task1_gui">
+        <omgdi:waypoint x="218" y="112"/>
+        <omgdi:waypoint x="255" y="112"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task 1 → Task 2 (horizontal, Lane Ventas) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task1-task2" id="sf-task1-task2_gui">
+        <omgdi:waypoint x="385" y="112"/>
+        <omgdi:waypoint x="425" y="112"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task 2 → Task 3 (Ventas → Finanzas, cruce de lane hacia abajo) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task2-task3" id="sf-task2-task3_gui">
+        <omgdi:waypoint x="490" y="147"/>
+        <omgdi:waypoint x="490" y="257"/>
+        <omgdi:waypoint x="595" y="257"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task 3 → Task 4 (Finanzas → Inventarios, cruce de lane hacia abajo) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task3-task4" id="sf-task3-task4_gui">
+        <omgdi:waypoint x="660" y="292"/>
+        <omgdi:waypoint x="660" y="402"/>
+        <omgdi:waypoint x="765" y="402"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task 4 → GW_Stock (horizontal, Lane Inventarios) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task4-gwstock" id="sf-task4-gwstock_gui">
+        <omgdi:waypoint x="895" y="402"/>
+        <omgdi:waypoint x="955" y="402"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- GW_Stock SÍ → GW_JoinRutas (Inventarios → Ventas, sube diagonalmente) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-gwstock-si-joinrutas" id="sf-gwstock-si-joinrutas_gui">
+        <omgdi:waypoint x="975" y="382"/>
+        <omgdi:waypoint x="975" y="112"/>
+        <omgdi:waypoint x="1720" y="112"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="100" x="1050" y="88"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- GW_Stock NO → Task_6B (Inventarios → Planificacion, baja) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-gwstock-no-task6b" id="sf-gwstock-no-task6b_gui">
+        <omgdi:waypoint x="975" y="422"/>
+        <omgdi:waypoint x="975" y="547"/>
+        <omgdi:waypoint x="1035" y="547"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="90" x="978" y="460"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task_6B → Task_7 (Planificacion → Planta, baja) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task6b-task7" id="sf-task6b-task7_gui">
+        <omgdi:waypoint x="1100" y="582"/>
+        <omgdi:waypoint x="1100" y="692"/>
+        <omgdi:waypoint x="1205" y="692"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task_7 → Task_8 (Planta → Calidad, baja) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task7-task8" id="sf-task7-task8_gui">
+        <omgdi:waypoint x="1270" y="727"/>
+        <omgdi:waypoint x="1270" y="802"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task_8 → GW_Calidad (horizontal, Lane Calidad) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task8-gwcalidad" id="sf-task8-gwcalidad_gui">
+        <omgdi:waypoint x="1335" y="837"/>
+        <omgdi:waypoint x="1410" y="837"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- GW_Calidad APRUEBA → GW_JoinRutas (Calidad → Ventas, sube) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-gwcalidad-aprueba-joinrutas" id="sf-gwcalidad-aprueba-joinrutas_gui">
+        <omgdi:waypoint x="1430" y="817"/>
+        <omgdi:waypoint x="1430" y="112"/>
+        <omgdi:waypoint x="1720" y="112"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="24" width="85" x="1540" y="88"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- GW_Calidad RECHAZA → Task_9B (Calidad → Planta, sube) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-gwcalidad-rechaza-task9b" id="sf-gwcalidad-rechaza-task9b_gui">
+        <omgdi:waypoint x="1450" y="837"/>
+        <omgdi:waypoint x="1565" y="837"/>
+        <omgdi:waypoint x="1565" y="727"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="24" width="75" x="1470" y="810"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task_9B → Task_8 (loop: Planta → Calidad, izquierda y baja) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task9b-task8" id="sf-task9b-task8_gui">
+        <omgdi:waypoint x="1500" y="692"/>
+        <omgdi:waypoint x="1175" y="692"/>
+        <omgdi:waypoint x="1175" y="837"/>
+        <omgdi:waypoint x="1205" y="837"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="24" width="75" x="1295" y="665"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- GW_JoinRutas → Task_6A (horizontal, Lane Ventas) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-joinrutas-task6a" id="sf-joinrutas-task6a_gui">
+        <omgdi:waypoint x="1760" y="112"/>
+        <omgdi:waypoint x="1805" y="112"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task_6A → Task_10 (Ventas → Logistica, baja) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task6a-task10" id="sf-task6a-task10_gui">
+        <omgdi:waypoint x="1870" y="147"/>
+        <omgdi:waypoint x="1870" y="947"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task_10 → Task_11 (horizontal, Lane Logistica) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task10-task11" id="sf-task10-task11_gui">
+        <omgdi:waypoint x="1935" y="982"/>
+        <omgdi:waypoint x="1985" y="982"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task_11 → Task_12 (horizontal, Lane Logistica) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task11-task12" id="sf-task11-task12_gui">
+        <omgdi:waypoint x="2115" y="982"/>
+        <omgdi:waypoint x="2165" y="982"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task_12 → Task_13 (Logistica → Finanzas, sube) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task12-task13" id="sf-task12-task13_gui">
+        <omgdi:waypoint x="2295" y="947"/>
+        <omgdi:waypoint x="2295" y="257"/>
+        <omgdi:waypoint x="2295" y="257"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Task_13 → End (horizontal, Lane Finanzas) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-task13-end" id="sf-task13-end_gui">
+        <omgdi:waypoint x="2295" y="257"/>
+        <omgdi:waypoint x="2372" y="257"/>
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</definitions>

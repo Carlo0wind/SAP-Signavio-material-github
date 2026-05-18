@@ -1,0 +1,1414 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+   xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+   xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+   xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+   xmlns:signavio="http://www.signavio.com"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   exporter="Signavio Process Editor, http://www.signavio.com"
+   exporterVersion="26.18.0"
+   expressionLanguage="http://www.w3.org/TR/XPath"
+   id="sid-indupro-tobe-definitions"
+   targetNamespace="http://www.signavio.com"
+   typeLanguage="http://www.w3.org/2001/XMLSchema"
+   xml:lang="es-EC"
+   xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd">
+
+  <!--
+    =====================================================================
+    INDUPRO S.A. — Proceso de Gestión de Pedidos (TO-BE)
+    SAP Signavio Regional Challenge 2026
+    Modelado BPMN 2.0 — Estado futuro del proceso CON mejoras
+    =====================================================================
+
+    MEJORAS ESTRUCTURALES REFLEJADAS EN EL MODELO:
+      P1 → Task 1: Recepción + auto-validación vía portal web (15 min)
+      P2+P3 → AND Gateway: Verificación de crédito e inventario EN PARALELO
+      P4 → SendTask 6A: Confirmación AUTOMÁTICA al cliente (5 min)
+      P5 → Task 7: Fabricación con QC en-proceso (reproceso reducido 18%→5%)
+      P6 → Task 6B: Planificación con ERP digital y visibilidad de capacidad
+      P7 → Task 11: TMS automatizado (10 min)
+      P8 → MessageFlow: Notificaciones proactivas al cliente
+
+    PARÁMETROS DE SIMULACIÓN (Escenario "TO-BE Base"):
+      Duración de ventana: 480 min (1 día hábil)
+      Frecuencia de casos: 4 pedidos / día
+      Tiempo total esperado (ruta fabricación, sin reproceso): 281 min
+      Costo total esperado por pedido: ~$46.84
+
+    RESTRICCIONES INAMOVIBLES MANTENIDAS:
+      - Fabricación por lote: 120 min (restricción técnica)
+      - Inspección de calidad: 30 min (requisito regulatorio)
+      - Ventana de despacho: 07:00–14:00 (Logística)
+
+    GATEWAYS — Probabilidades TO-BE:
+      GW-AND: Verificación crédito Y stock (paralelo automático)
+      GW-XOR-01 ¿Crédito OK Y Stock OK? → SÍ: 70% / NO: 30%
+      GW-XOR-02 ¿Pasa control de calidad? → APRUEBA: 95% / RECHAZA: 5%
+
+    TIPOS DE TAREA BPMN 2.0:
+      serviceTask  → Actividad automatizada (sistema/API) - cyan #ccf2ff
+      userTask     → Actividad manual (persona) - amarillo #ffffcc
+      sendTask     → Tarea de envío de mensaje al cliente - púrpura #ccccff
+    =====================================================================
+  -->
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- MENSAJES BPMN 2.0                                               -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <message id="msg-solicitud-pedido"   name="Solicitud de Pedido (portal web)"/>
+  <message id="msg-confirmacion-orden" name="Confirmación de Orden"/>
+  <message id="msg-factura-electronica" name="Factura Electrónica"/>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- COLABORACIÓN (Pool INDUPRO + Pool Cliente Externo)              -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <collaboration id="sid-collab-indupro-tobe">
+    <extensionElements>
+      <signavio:signavioDiagramMetaData metaKey="revisionid" metaValue="INDUPRO-TOBE-v1"/>
+    </extensionElements>
+
+    <!-- Pool principal: INDUPRO S.A. (con proceso interno) -->
+    <participant
+       id="sid-pool-indupro-tobe"
+       name="INDUPRO S.A."
+       processRef="sid-process-indupro-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </participant>
+
+    <!-- Pool externo: Cliente (Black Box — sin proceso interno visible) -->
+    <participant
+       id="sid-pool-cliente"
+       name="Cliente">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#f0f0f0"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#666666"/>
+      </extensionElements>
+    </participant>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- FLUJOS DE MENSAJE (MessageFlow) entre pools                  -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+
+    <!-- MF-01: Cliente → INDUPRO (solicitud de pedido vía portal web) -->
+    <messageFlow
+       id="mf-solicitud-inicio"
+       name="Solicitud de pedido&#10;(portal web)"
+       sourceRef="sid-pool-cliente"
+       targetRef="sid-start-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#666666"/>
+      </extensionElements>
+    </messageFlow>
+
+    <!-- MF-02: INDUPRO → Cliente (confirmación automática de pedido) -->
+    <messageFlow
+       id="mf-confirmacion-cliente"
+       name="Confirmación automática&#10;de pedido (email/SMS)"
+       sourceRef="sid-task-6a-tobe"
+       targetRef="sid-pool-cliente">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#666666"/>
+      </extensionElements>
+    </messageFlow>
+
+    <!-- MF-03: INDUPRO → Cliente (factura electrónica al cerrar proceso) -->
+    <messageFlow
+       id="mf-factura-cliente"
+       name="Factura electrónica"
+       sourceRef="sid-end-tobe"
+       targetRef="sid-pool-cliente">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#666666"/>
+      </extensionElements>
+    </messageFlow>
+
+  </collaboration>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- PROCESO PRINCIPAL                                               -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <process
+     id="sid-process-indupro-tobe"
+     isClosed="false"
+     isExecutable="false"
+     name="Proceso de Gestión de Pedidos — TO-BE"
+     processType="None">
+
+    <extensionElements/>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- SWIMLANES (8 roles: 7 departamentos + Sistema Automático)   -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <laneSet id="sid-laneset-tobe">
+
+      <!-- Lane 1: Ejecutivo de Ventas -->
+      <lane id="sid-lane-ventas-tobe" name="Ejecutivo de Ventas">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-start-tobe</flowNodeRef>
+        <flowNodeRef>sid-task-1-tobe</flowNodeRef>
+        <flowNodeRef>sid-gw-join-tobe</flowNodeRef>
+        <flowNodeRef>sid-task-6a-tobe</flowNodeRef>
+      </lane>
+
+      <!-- Lane 2: Analista de Finanzas -->
+      <lane id="sid-lane-finanzas-tobe" name="Analista de Finanzas">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-task-2a-tobe</flowNodeRef>
+        <flowNodeRef>sid-task-13-tobe</flowNodeRef>
+        <flowNodeRef>sid-end-tobe</flowNodeRef>
+      </lane>
+
+      <!-- Lane 3: Coordinador de Inventarios -->
+      <lane id="sid-lane-inventarios-tobe" name="Coordinador de Inventarios">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-task-2b-tobe</flowNodeRef>
+      </lane>
+
+      <!-- Lane 4: Sistema Automático (capa de orquestación digital) -->
+      <lane id="sid-lane-sistema-tobe" name="Sistema Automático">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue="#e8f4fc"/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-gw-and-split-tobe</flowNodeRef>
+        <flowNodeRef>sid-gw-and-join-tobe</flowNodeRef>
+        <flowNodeRef>sid-gw-creditstock-tobe</flowNodeRef>
+      </lane>
+
+      <!-- Lane 5: Planificador de Producción -->
+      <lane id="sid-lane-planificacion-tobe" name="Planificador de Producción">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-task-6b-tobe</flowNodeRef>
+      </lane>
+
+      <!-- Lane 6: Operario de Planta -->
+      <lane id="sid-lane-planta-tobe" name="Operario de Planta">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-task-7-tobe</flowNodeRef>
+        <flowNodeRef>sid-task-9b-tobe</flowNodeRef>
+      </lane>
+
+      <!-- Lane 7: Inspector de Calidad -->
+      <lane id="sid-lane-calidad-tobe" name="Inspector de Calidad">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-task-8-tobe</flowNodeRef>
+        <flowNodeRef>sid-gw-qc-tobe</flowNodeRef>
+      </lane>
+
+      <!-- Lane 8: Coordinador de Logística -->
+      <lane id="sid-lane-logistica-tobe" name="Coordinador de Logística">
+        <extensionElements>
+          <signavio:signavioMetaData metaKey="bgcolor" metaValue=""/>
+          <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+        </extensionElements>
+        <flowNodeRef>sid-task-10-tobe</flowNodeRef>
+        <flowNodeRef>sid-task-11-tobe</flowNodeRef>
+        <flowNodeRef>sid-task-12-tobe</flowNodeRef>
+      </lane>
+
+    </laneSet>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- EVENTO DE INICIO — Message Start Event                       -->
+    <!-- Solicitud de pedido recibida vía portal web integrado        -->
+    <!-- Lane: Ejecutivo de Ventas                                    -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <startEvent
+       id="sid-start-tobe"
+       name="Solicitud de pedido&#10;recibida (portal web)">
+      <documentation>
+        Tipo: Message Start Event.
+        El cliente envía su solicitud de pedido a través del portal web integrado de INDUPRO.
+        El portal realiza una pre-validación automática del formulario (campos obligatorios,
+        formato de cantidades, código de producto) antes de disparar el proceso.
+        El mensaje recibido es: "Solicitud de Pedido (portal web)".
+        [SIMULACIÓN] Frecuencia de instancias: 4 pedidos/día — ventana 480 min.
+        MEJORA vs AS-IS: Elimina la recepción por correo/teléfono sin trazabilidad (P8).
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <outgoing>sf-tobe-01</outgoing>
+      <messageEventDefinition id="sid-msg-def-start-tobe" messageRef="msg-solicitud-pedido"/>
+    </startEvent>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 1 — Recepcionar y validar pedido vía portal web         -->
+    <!-- Tipo: serviceTask (sistema automatizado)                      -->
+    <!-- Lane: Ejecutivo de Ventas                                    -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <serviceTask
+       completionQuantity="1"
+       id="sid-task-1-tobe"
+       isForCompensation="false"
+       name="Recepcionar y validar&#10;pedido vía portal web"
+       startQuantity="1">
+      <documentation>
+        Responsable: Ejecutivo de Ventas (supervisión) / Sistema (ejecución automática)
+        Sistema/Herramienta: Portal Web Integrado + Formulario Digital
+        Tipo BPMN: Service Task (actividad automatizada con supervisión humana)
+        Duración TO-BE: 15 min (distribución fija)
+        Costo por hora: $12.00
+        Costo de la actividad: $3.00
+        Clasificación: Actividad con valor agregado (VA)
+        MEJORA: El portal web auto-valida datos del pedido (cliente, productos, cantidades,
+        formato). Elimina Task 1 (30 min) + Task 2 (45 min) del AS-IS = -60 min, -$12.00.
+        Errores de transcripción reducidos de ~15% a prácticamente 0%.
+        DATA OUT: Pedido digital validado → activa verificación paralela.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ccf2ff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-01</incoming>
+      <outgoing>sf-tobe-02</outgoing>
+    </serviceTask>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- GATEWAY AND-SPLIT — Inicio verificación en paralelo          -->
+    <!-- Tipo: Parallel Gateway (AND) Diverging                       -->
+    <!-- Lane: Sistema Automático                                     -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <parallelGateway
+       id="sid-gw-and-split-tobe"
+       name="Inicio verificación&#10;paralela"
+       gatewayDirection="Diverging">
+      <documentation>
+        Tipo: Parallel Gateway (AND) — Diverging (Split)
+        Activa SIMULTÁNEAMENTE las dos ramas de verificación:
+          - Rama A: Verificación de crédito del cliente (Task 2A — Finanzas)
+          - Rama B: Consulta de disponibilidad de stock (Task 2B — Inventarios)
+        MEJORA CLAVE: Elimina la secuencialidad AS-IS (Task 3 → Task 4 = 110 min).
+        Con paralelización: tiempo efectivo = MAX(15, 10) = 15 min.
+        Ahorro neto: 95 min de tiempo de ciclo.
+        No tiene duración ni costo propios — elemento estructural.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ccffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-02</incoming>
+      <outgoing>sf-tobe-03a</outgoing>
+      <outgoing>sf-tobe-03b</outgoing>
+    </parallelGateway>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 2A — Verificar crédito del cliente vía API financiera   -->
+    <!-- Tipo: serviceTask (integración automática)                   -->
+    <!-- Lane: Analista de Finanzas                                   -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <serviceTask
+       completionQuantity="1"
+       id="sid-task-2a-tobe"
+       isForCompensation="false"
+       name="Verificar crédito del cliente&#10;vía API financiera"
+       startQuantity="1">
+      <documentation>
+        Responsable: Analista de Finanzas (revisión de alertas) / Sistema (consulta automática)
+        Sistema/Herramienta: Sistema Financiero integrado vía API REST
+        Tipo BPMN: Service Task (automatizado — llamada a API)
+        Duración TO-BE: 15 min (distribución fija) — incluye tiempo de respuesta API
+        Costo por hora: $13.00
+        Costo de la actividad: $3.25
+        Clasificación: Actividad con valor agregado (VA)
+        CORRE EN PARALELO con Task 2B.
+        MEJORA vs AS-IS: Task 3 AS-IS era 60 min manual secuencial. Ahora 15 min automatizado.
+        Ahorro: -45 min, -$9.75/pedido.
+        Resultado: Semáforo de crédito (Verde/Amarillo/Rojo) → input para XOR-01.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ccf2ff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-03a</incoming>
+      <outgoing>sf-tobe-04a</outgoing>
+    </serviceTask>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 2B — Consultar disponibilidad de stock en ERP           -->
+    <!-- Tipo: serviceTask (consulta ERP en tiempo real)              -->
+    <!-- Lane: Coordinador de Inventarios                             -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <serviceTask
+       completionQuantity="1"
+       id="sid-task-2b-tobe"
+       isForCompensation="false"
+       name="Consultar disponibilidad de stock&#10;en ERP (tiempo real)"
+       startQuantity="1">
+      <documentation>
+        Responsable: Coordinador de Inventarios (supervisión) / Sistema (consulta automática)
+        Sistema/Herramienta: ERP Integrado — consulta de inventario en tiempo real
+        Tipo BPMN: Service Task (automatizado — consulta ERP)
+        Duración TO-BE: 10 min (distribución fija)
+        Costo por hora: $10.00
+        Costo de la actividad: $1.67
+        Clasificación: Actividad con valor agregado (VA)
+        CORRE EN PARALELO con Task 2A.
+        MEJORA vs AS-IS: Task 4 AS-IS era 50 min con doble fuente (registro físico + ERP legacy).
+        Ahora 10 min con única fuente de verdad integrada. Ahorro: -40 min, -$6.66/pedido.
+        Elimina discrepancias entre registro físico y ERP (P3).
+        Resultado: Disponibilidad en tiempo real → input para XOR-01.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ccf2ff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-03b</incoming>
+      <outgoing>sf-tobe-04b</outgoing>
+    </serviceTask>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- GATEWAY AND-JOIN — Convergencia de verificaciones paralelas  -->
+    <!-- Tipo: Parallel Gateway (AND) Converging                      -->
+    <!-- Lane: Sistema Automático                                     -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <parallelGateway
+       id="sid-gw-and-join-tobe"
+       name=""
+       gatewayDirection="Converging">
+      <documentation>
+        Tipo: Parallel Gateway (AND) — Converging (Join)
+        Espera a que AMBAS verificaciones estén completas:
+          - Resultado de Task 2A: estado de crédito del cliente
+          - Resultado de Task 2B: disponibilidad de stock
+        Solo continúa cuando los DOS resultados están disponibles.
+        No tiene duración ni costo propios — elemento estructural.
+        El tiempo total de este bloque paralelo es MAX(15 min, 10 min) = 15 min.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ccffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-04a</incoming>
+      <incoming>sf-tobe-04b</incoming>
+      <outgoing>sf-tobe-05</outgoing>
+    </parallelGateway>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- GATEWAY XOR-01 — ¿Crédito aprobado Y stock disponible?       -->
+    <!-- Tipo: Exclusive Gateway (XOR) Diverging                      -->
+    <!-- Lane: Sistema Automático                                     -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <exclusiveGateway
+       id="sid-gw-creditstock-tobe"
+       name="¿Crédito aprobado&#10;Y stock disponible?"
+       gatewayDirection="Diverging">
+      <documentation>
+        Tipo: Exclusive Gateway (XOR) — Decisión excluyente automática
+        Evalúa simultáneamente los dos resultados del bloque AND:
+          - ¿El cliente tiene crédito aprobado?
+          - ¿Hay stock disponible en bodega?
+        [SIMULACIÓN — PROBABILIDADES TO-BE]:
+          Ruta SÍ (ambas condiciones OK): 70%  [vs 65% en AS-IS]
+          Ruta NO (se requiere producción): 30% [vs 35% en AS-IS]
+        MEJORA: La digitalización del inventario y crédito mejora la disponibilidad
+        de stock y reduce los pedidos que requieren fabricación.
+        Duración: 2 min (decisión automática del sistema)
+        [SIMULACIÓN] Configurar en pestaña Frequency: SÍ=70%, NO=30%.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-05</incoming>
+      <outgoing>sf-tobe-06-si</outgoing>
+      <outgoing>sf-tobe-06-no</outgoing>
+    </exclusiveGateway>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 6B — Programar orden de producción en ERP digital       -->
+    <!-- Tipo: userTask (asistido por sistema)                        -->
+    <!-- Lane: Planificador de Producción                             -->
+    <!-- Ruta: NO — 30% de pedidos                                   -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <userTask
+       completionQuantity="1"
+       id="sid-task-6b-tobe"
+       isForCompensation="false"
+       name="Programar orden de producción&#10;en ERP digital"
+       startQuantity="1">
+      <documentation>
+        Responsable: Planificador de Producción
+        Sistema/Herramienta: Módulo de Planificación ERP (con visibilidad de capacidad real)
+        Tipo BPMN: User Task (actividad humana asistida por sistema)
+        Duración TO-BE: 20 min (distribución fija) [vs 40 min en AS-IS]
+        Costo por hora: $14.00
+        Costo de la actividad: $4.67
+        Ruta activa: 30% de los pedidos (requieren fabricación)
+        Clasificación: Actividad con valor agregado (VA)
+        MEJORA vs AS-IS: Planificación manual con planilla → ERP digital con visibilidad
+        de capacidad en tiempo real. Ahorro: -20 min, -$4.66/pedido.
+        El planificador ve la carga de trabajo actual de ambas plantas y asigna
+        la orden al equipo con menor carga (optimización de recursos).
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-06-no</incoming>
+      <outgoing>sf-tobe-07</outgoing>
+    </userTask>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 7 — Fabricar el producto (con QC en-proceso)            -->
+    <!-- Tipo: userTask (proceso físico inamovible)                   -->
+    <!-- Lane: Operario de Planta                                     -->
+    <!-- RESTRICCIÓN TÉCNICA INAMOVIBLE: 120 min                     -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <userTask
+       completionQuantity="1"
+       id="sid-task-7-tobe"
+       isForCompensation="false"
+       name="Fabricar el producto&#10;(con QC en-proceso)"
+       startQuantity="1">
+      <documentation>
+        Responsable: Operarios de Planta (6 disponibles, turno 8h)
+        Sistema/Herramienta: Órdenes de trabajo digitales + Sistema QC en línea
+        Tipo BPMN: User Task (proceso físico de manufactura)
+        Duración TO-BE: 120 min (distribución fija) — RESTRICCIÓN TÉCNICA INAMOVIBLE
+        Costo por hora: $8.00
+        Costo de la actividad: $16.00
+        Ruta activa: 30% de los pedidos (requieren fabricación)
+        Clasificación: Actividad con valor agregado (VA)
+        MEJORA INTERNA: Incorporación de control de calidad en-proceso mediante
+        checklist digital en tablet durante la fabricación. Los operarios marcan
+        puntos de control cada 30 min. Los defectos se detectan ANTES del QC final.
+        Esto reduce la tasa de rechazo en QC final de 18% → 5%.
+        NOTA: El tiempo físico de fabricación NO puede reducirse.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-07</incoming>
+      <outgoing>sf-tobe-08</outgoing>
+    </userTask>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 8 — Inspeccionar y liberar calidad del lote             -->
+    <!-- Tipo: userTask (inspección regulatoria)                      -->
+    <!-- Lane: Inspector de Calidad                                   -->
+    <!-- RESTRICCIÓN REGULATORIA INAMOVIBLE: 30 min                  -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <userTask
+       completionQuantity="1"
+       id="sid-task-8-tobe"
+       isForCompensation="false"
+       name="Inspeccionar y liberar&#10;calidad del lote"
+       startQuantity="1">
+      <documentation>
+        Responsable: Inspector de Calidad (2 disponibles)
+        Sistema/Herramienta: Sistema QC Digital (checklist digital con trazabilidad)
+        Tipo BPMN: User Task (inspección humana requerida por regulación)
+        Duración TO-BE: 30 min (distribución fija) — REQUISITO REGULATORIO INAMOVIBLE
+        Costo por hora: $11.00
+        Costo de la actividad: $5.50
+        Clasificación: Actividad con valor agregado (VA)
+        MEJORA: El checklist ahora es digital (tablet), con registro automático de resultados
+        y trazabilidad por lote. El QC en-proceso durante Task 7 reduce significativamente
+        los defectos que llegan a esta etapa.
+        MÚLTIPLES INCOMING: recibe flujo de Task 7 (producción normal) Y de Task 9B (post-reproceso).
+        NOTA: El tiempo de inspección NO puede reducirse.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-08</incoming>
+      <incoming>sf-tobe-loop-9b</incoming>
+      <outgoing>sf-tobe-09</outgoing>
+    </userTask>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- GATEWAY XOR-02 — ¿Pasa control de calidad?                  -->
+    <!-- Tipo: Exclusive Gateway (XOR) Diverging                      -->
+    <!-- Lane: Inspector de Calidad                                   -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <exclusiveGateway
+       id="sid-gw-qc-tobe"
+       name="¿Pasa control&#10;de calidad?"
+       gatewayDirection="Diverging">
+      <documentation>
+        Tipo: Exclusive Gateway (XOR) — Decisión excluyente
+        Duración TO-BE: 2 min (registro digital automático)
+        Costo por hora: $11.00
+        Costo de la actividad: $0.37
+        [SIMULACIÓN — PROBABILIDADES TO-BE]:
+          Ruta APRUEBA: 95% [vs 82% en AS-IS → MEJORA de +13pp]
+          Ruta RECHAZA (reproceso): 5% [vs 18% en AS-IS → REDUCCIÓN de -72.2%]
+        IMPACTO DE LA MEJORA: Con QC en-proceso durante Task 7, los defectos se detectan
+        y corrigen durante la fabricación. Solo el 5% de lotes requieren reproceso final.
+        Escala mensual TO-BE: 1,200 × 30% × 5% = ~18 reprocesos/mes [vs ~75.6 en AS-IS].
+        Ahorro en reprocesos: ~57.6 × $8.00 = $460/mes adicionales.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-09</incoming>
+      <outgoing>sf-tobe-qc-aprueba</outgoing>
+      <outgoing>sf-tobe-qc-rechaza</outgoing>
+    </exclusiveGateway>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 9B — Reprocesar lote rechazado                          -->
+    <!-- Tipo: userTask (reproceso residual — NVA)                    -->
+    <!-- Lane: Operario de Planta                                     -->
+    <!-- Ruta: RECHAZA — 5% de lotes fabricados (vs 18% en AS-IS)    -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <userTask
+       completionQuantity="1"
+       id="sid-task-9b-tobe"
+       isForCompensation="false"
+       name="Reprocesar lote&#10;rechazado"
+       startQuantity="1">
+      <documentation>
+        Responsable: Operarios de Planta + Inspector de Calidad
+        Sistema/Herramienta: Manual (proceso físico de corrección)
+        Tipo BPMN: User Task (actividad correctiva residual)
+        Duración TO-BE: 60 min (distribución fija) [vs 90 min en AS-IS → -33%]
+        Costo por hora: $8.00
+        Costo de la actividad: $8.00 [vs $12.00 en AS-IS]
+        Ruta activa: 5% de los lotes fabricados [vs 18% en AS-IS]
+        Clasificación: Actividad SIN valor agregado (NVA) — rework residual
+        MEJORA: El reproceso es más corto (60 min) porque el QC en-proceso durante Task 7
+        identifica el punto exacto del defecto, reduciendo el tiempo de diagnóstico y corrección.
+        FLUJO: Tras reproceso, el lote vuelve a Task 8 (inspección final) para re-evaluación.
+        DOBLE MEJORA: Menos casos (5% vs 18%) Y menos tiempo por caso (60 vs 90 min).
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffcccc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-qc-rechaza</incoming>
+      <outgoing>sf-tobe-loop-9b</outgoing>
+    </userTask>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- GATEWAY XOR-JOIN — Convergencia de rutas (stock + fabricac.) -->
+    <!-- Tipo: Exclusive Gateway (XOR) Converging                     -->
+    <!-- Lane: Ejecutivo de Ventas                                    -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <exclusiveGateway
+       id="sid-gw-join-tobe"
+       name=""
+       gatewayDirection="Converging">
+      <documentation>
+        Tipo: Exclusive Gateway (XOR) — Convergente (join)
+        Punto de unión de dos rutas:
+          1. Ruta directa: GW_CreditStock SÍ (70% de pedidos — crédito OK y hay stock)
+          2. Ruta fabricación: GW_QC APRUEBA (95% × 30% = 28.5% de pedidos)
+        Después de este join, el proceso continúa con la confirmación automática al cliente.
+        Sin costo/tiempo propio — elemento estructural BPMN.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-06-si</incoming>
+      <incoming>sf-tobe-qc-aprueba</incoming>
+      <outgoing>sf-tobe-10</outgoing>
+    </exclusiveGateway>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 6A — Enviar confirmación automática de pedido           -->
+    <!-- Tipo: sendTask (envía mensaje al Cliente)                    -->
+    <!-- Lane: Ejecutivo de Ventas                                    -->
+    <!-- Genera MessageFlow MF-02 hacia el pool Cliente              -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <sendTask
+       completionQuantity="1"
+       id="sid-task-6a-tobe"
+       isForCompensation="false"
+       messageRef="msg-confirmacion-orden"
+       name="Enviar confirmación automática&#10;de pedido al cliente"
+       startQuantity="1">
+      <documentation>
+        Responsable: Sistema Automático / Ejecutivo de Ventas (supervisión)
+        Sistema/Herramienta: Portal Web + Sistema de Notificaciones (email/SMS automático)
+        Tipo BPMN: Send Task (tarea de envío de mensaje al participante externo Cliente)
+        Duración TO-BE: 5 min (distribución fija) [vs 20 min en AS-IS]
+        Costo por hora: $12.00
+        Costo de la actividad: $1.00 [vs $4.00 en AS-IS]
+        Clasificación: Actividad con valor agregado (VA)
+        MEJORA: Confirmación automática inmediata (5 min) vs correo manual (20 min).
+        El cliente recibe: número de pedido, estado, fecha estimada de entrega, tracking URL.
+        MENSAJE ENVIADO: "Confirmación de Orden" → MessageFlow MF-02 → Pool Cliente.
+        NOTA: Este SendTask es la fuente del MessageFlow mf-confirmacion-cliente.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ccccff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-10</incoming>
+      <outgoing>sf-tobe-11</outgoing>
+    </sendTask>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 10 — Empacar y preparar para despacho (semi-auto)       -->
+    <!-- Tipo: userTask (operación física con apoyo digital)           -->
+    <!-- Lane: Coordinador de Logística                               -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <userTask
+       completionQuantity="1"
+       id="sid-task-10-tobe"
+       isForCompensation="false"
+       name="Empacar y preparar para despacho&#10;(semi-automatizado)"
+       startQuantity="1">
+      <documentation>
+        Responsable: Coordinador de Logística / Operarios de Logística
+        Sistema/Herramienta: Sistema de etiquetado semi-automático + packing list digital
+        Tipo BPMN: User Task (actividad manual con soporte de sistema)
+        Duración TO-BE: 15 min (distribución fija) [vs 25 min en AS-IS]
+        Costo por hora: $10.00
+        Costo de la actividad: $2.50 [vs $4.17 en AS-IS]
+        Clasificación: Actividad con valor agregado (VA)
+        MEJORA: Etiquetado semi-automatizado reduce tiempo manual. El packing list se genera
+        automáticamente desde el ERP (ítems, cantidades, destino). Ahorro: -10 min, -$1.67.
+        RESTRICCIÓN MANTENIDA: Despacho solo entre 07:00 y 14:00 (ventana logística).
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-11</incoming>
+      <outgoing>sf-tobe-12</outgoing>
+    </userTask>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 11 — Asignar transportista vía TMS                      -->
+    <!-- Tipo: serviceTask (sistema TMS automatizado)                  -->
+    <!-- Lane: Coordinador de Logística                               -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <serviceTask
+       completionQuantity="1"
+       id="sid-task-11-tobe"
+       isForCompensation="false"
+       name="Asignar transportista&#10;vía TMS automatizado"
+       startQuantity="1">
+      <documentation>
+        Responsable: Coordinador de Logística (supervisión) / Sistema TMS (ejecución)
+        Sistema/Herramienta: TMS (Transport Management System) — módulo de asignación
+        Tipo BPMN: Service Task (asignación automatizada de transporte)
+        Duración TO-BE: 10 min (distribución fija) [vs 30 min en AS-IS]
+        Costo por hora: $10.00
+        Costo de la actividad: $1.67 [vs $5.00 en AS-IS]
+        Clasificación: Actividad con valor agregado (VA)
+        MEJORA: El TMS asigna automáticamente el transportista disponible más eficiente
+        basado en zona de entrega, disponibilidad y carga actual. Elimina llamadas
+        telefónicas (P7). El cliente recibe automáticamente tracking URL y hora estimada.
+        Ahorro: -20 min, -$3.33/pedido.
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ccf2ff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-12</incoming>
+      <outgoing>sf-tobe-13</outgoing>
+    </serviceTask>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 12 — Entregar al cliente y registrar firma digital      -->
+    <!-- Tipo: userTask (entrega física — duración inamovible)        -->
+    <!-- Lane: Coordinador de Logística                               -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <userTask
+       completionQuantity="1"
+       id="sid-task-12-tobe"
+       isForCompensation="false"
+       name="Entregar al cliente y registrar&#10;firma digital de conformidad"
+       startQuantity="1">
+      <documentation>
+        Responsable: Transportista / Coordinador de Logística
+        Sistema/Herramienta: App móvil de entrega + firma digital (tablet/smartphone)
+        Tipo BPMN: User Task (entrega física al cliente)
+        Duración TO-BE: 45 min (distribución fija) — incluye tiempo de traslado físico
+        Costo por hora: $10.00
+        Costo de la actividad: $7.50 [= igual que AS-IS]
+        Clasificación: Actividad con valor agregado (VA)
+        MEJORA: La guía de remisión en papel se reemplaza por firma digital en app móvil.
+        El registro de conformidad es instantáneo y dispara automáticamente Task 13.
+        El cliente ve en tiempo real que su pedido fue marcado como "entregado".
+        Nota: El tiempo de traslado físico no puede reducirse (restricción geográfica).
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffcc"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-13</incoming>
+      <outgoing>sf-tobe-14</outgoing>
+    </userTask>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TASK 13 — Generar y enviar factura electrónica              -->
+    <!-- Tipo: serviceTask (facturación automática)                   -->
+    <!-- Lane: Analista de Finanzas                                   -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <serviceTask
+       completionQuantity="1"
+       id="sid-task-13-tobe"
+       isForCompensation="false"
+       name="Generar y enviar factura&#10;electrónica automática"
+       startQuantity="1">
+      <documentation>
+        Responsable: Sistema ERP / Analista de Finanzas (supervisión)
+        Sistema/Herramienta: Módulo ERP + Sistema de Facturación Electrónica (SRI)
+        Tipo BPMN: Service Task (generación y envío automático de factura)
+        Duración TO-BE: 5 min (distribución fija) [vs 20 min en AS-IS]
+        Costo por hora: $13.00
+        Costo de la actividad: $1.08 [vs $4.33 en AS-IS]
+        Clasificación: Actividad con valor agregado (VA)
+        MEJORA: La firma digital de Task 12 dispara automáticamente la generación de la
+        factura electrónica. La factura cumple normativa SRI (Ecuador). Ahorro: -15 min, -$3.25.
+        Activación: automática al registrar conformidad de entrega (digital trigger).
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ccf2ff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-14</incoming>
+      <outgoing>sf-tobe-15</outgoing>
+    </serviceTask>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- EVENTO DE FIN — Message End Event                            -->
+    <!-- Pedido entregado y facturado electrónicamente               -->
+    <!-- Lane: Analista de Finanzas                                   -->
+    <!-- Genera MessageFlow MF-03 hacia el pool Cliente              -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <endEvent
+       id="sid-end-tobe"
+       name="Pedido entregado&#10;y facturado">
+      <documentation>
+        Tipo: Message End Event.
+        El proceso finaliza con la entrega física confirmada y la factura electrónica enviada.
+        El mensaje de cierre "Factura Electrónica" es enviado automáticamente al Cliente.
+        [SIMULACIÓN — RESULTADOS ESPERADOS TO-BE (ruta fabricación, sin reproceso)]:
+          Tiempo total de ciclo: 281 min [vs 555 min AS-IS → -49.4%]
+          Costo total por pedido: ~$46.84 [vs $105.91 AS-IS → -55.8%]
+          Tiempo sin valor agregado (NVA): ~45 min [vs ~210 min AS-IS → -78.6%]
+          Tasa de reproceso: 5% [vs 18% AS-IS → -72.2%]
+          ROI del proyecto: &lt; 1 mes (ahorro $59.07/pedido × 1,200 pedidos/mes)
+      </documentation>
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bgcolor" metaValue="#ffffff"/>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <incoming>sf-tobe-15</incoming>
+      <messageEventDefinition id="sid-msg-def-end-tobe" messageRef="msg-factura-electronica"/>
+    </endEvent>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SEQUENCE FLOWS                                              -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+
+    <!-- SF-01: Start → Task 1 (portal web → recepción automática) -->
+    <sequenceFlow id="sf-tobe-01" name=""
+       sourceRef="sid-start-tobe"
+       targetRef="sid-task-1-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-02: Task 1 → AND SPLIT (validación exitosa → inicio paralelo) -->
+    <sequenceFlow id="sf-tobe-02" name=""
+       sourceRef="sid-task-1-tobe"
+       targetRef="sid-gw-and-split-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-03A: AND SPLIT → Task 2A (rama paralela: crédito) -->
+    <sequenceFlow id="sf-tobe-03a" name="Verificar crédito"
+       sourceRef="sid-gw-and-split-tobe"
+       targetRef="sid-task-2a-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-03B: AND SPLIT → Task 2B (rama paralela: stock) -->
+    <sequenceFlow id="sf-tobe-03b" name="Consultar stock"
+       sourceRef="sid-gw-and-split-tobe"
+       targetRef="sid-task-2b-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-04A: Task 2A → AND JOIN (crédito verificado) -->
+    <sequenceFlow id="sf-tobe-04a" name=""
+       sourceRef="sid-task-2a-tobe"
+       targetRef="sid-gw-and-join-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-04B: Task 2B → AND JOIN (stock verificado) -->
+    <sequenceFlow id="sf-tobe-04b" name=""
+       sourceRef="sid-task-2b-tobe"
+       targetRef="sid-gw-and-join-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-05: AND JOIN → XOR ¿Crédito Y Stock? -->
+    <sequenceFlow id="sf-tobe-05" name=""
+       sourceRef="sid-gw-and-join-tobe"
+       targetRef="sid-gw-creditstock-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-06-SÍ: XOR → XOR JOIN (Sí: crédito OK y stock OK — 70%) -->
+    <sequenceFlow id="sf-tobe-06-si" name="Sí&#10;(crédito OK y stock OK — 70%)"
+       sourceRef="sid-gw-creditstock-tobe"
+       targetRef="sid-gw-join-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <conditionExpression xsi:type="tFormalExpression">
+        Crédito aprobado Y stock disponible en bodega (probabilidad: 70%)
+      </conditionExpression>
+    </sequenceFlow>
+
+    <!-- SF-06-NO: XOR → Task 6B (No: requiere producción — 30%) -->
+    <sequenceFlow id="sf-tobe-06-no" name="No&#10;(requiere producción — 30%)"
+       sourceRef="sid-gw-creditstock-tobe"
+       targetRef="sid-task-6b-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <conditionExpression xsi:type="tFormalExpression">
+        Sin crédito suficiente O sin stock disponible; se debe fabricar el producto (probabilidad: 30%)
+      </conditionExpression>
+    </sequenceFlow>
+
+    <!-- SF-07: Task 6B → Task 7 (Planificación → Planta) -->
+    <sequenceFlow id="sf-tobe-07" name=""
+       sourceRef="sid-task-6b-tobe"
+       targetRef="sid-task-7-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-08: Task 7 → Task 8 (Planta → Calidad) -->
+    <sequenceFlow id="sf-tobe-08" name=""
+       sourceRef="sid-task-7-tobe"
+       targetRef="sid-task-8-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-09: Task 8 → XOR QC -->
+    <sequenceFlow id="sf-tobe-09" name=""
+       sourceRef="sid-task-8-tobe"
+       targetRef="sid-gw-qc-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-QC-APRUEBA: XOR QC → XOR JOIN (aprueba — 95%) -->
+    <sequenceFlow id="sf-tobe-qc-aprueba" name="Aprueba&#10;(95%)"
+       sourceRef="sid-gw-qc-tobe"
+       targetRef="sid-gw-join-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <conditionExpression xsi:type="tFormalExpression">
+        El lote aprueba el control de calidad final (probabilidad: 95%)
+      </conditionExpression>
+    </sequenceFlow>
+
+    <!-- SF-QC-RECHAZA: XOR QC → Task 9B (rechaza — 5%) -->
+    <sequenceFlow id="sf-tobe-qc-rechaza" name="Rechaza&#10;(5%)"
+       sourceRef="sid-gw-qc-tobe"
+       targetRef="sid-task-9b-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+      <conditionExpression xsi:type="tFormalExpression">
+        El lote no aprueba el control de calidad; requiere reproceso (probabilidad: 5%)
+      </conditionExpression>
+    </sequenceFlow>
+
+    <!-- SF-LOOP-9B: Task 9B → Task 8 (loop de reproceso → re-inspección) -->
+    <sequenceFlow id="sf-tobe-loop-9b" name="Vuelve a&#10;inspección"
+       sourceRef="sid-task-9b-tobe"
+       targetRef="sid-task-8-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-10: XOR JOIN → Task 6A (confirmación al cliente) -->
+    <sequenceFlow id="sf-tobe-10" name=""
+       sourceRef="sid-gw-join-tobe"
+       targetRef="sid-task-6a-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-11: Task 6A → Task 10 (Ventas → Logística — vertical) -->
+    <sequenceFlow id="sf-tobe-11" name=""
+       sourceRef="sid-task-6a-tobe"
+       targetRef="sid-task-10-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-12: Task 10 → Task 11 (horizontal en Logística) -->
+    <sequenceFlow id="sf-tobe-12" name=""
+       sourceRef="sid-task-10-tobe"
+       targetRef="sid-task-11-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-13: Task 11 → Task 12 (horizontal en Logística) -->
+    <sequenceFlow id="sf-tobe-13" name=""
+       sourceRef="sid-task-11-tobe"
+       targetRef="sid-task-12-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-14: Task 12 → Task 13 (Logística → Finanzas — cruce vertical) -->
+    <sequenceFlow id="sf-tobe-14" name=""
+       sourceRef="sid-task-12-tobe"
+       targetRef="sid-task-13-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+    <!-- SF-15: Task 13 → End (Finanzas — horizontal) -->
+    <sequenceFlow id="sf-tobe-15" name=""
+       sourceRef="sid-task-13-tobe"
+       targetRef="sid-end-tobe">
+      <extensionElements>
+        <signavio:signavioMetaData metaKey="bordercolor" metaValue="#000000"/>
+      </extensionElements>
+    </sequenceFlow>
+
+  </process>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- BPMN DIAGRAM INTERCHANGE (DI) — Layout visual                  -->
+  <!--                                                                 -->
+  <!-- Canvas: 2560 × 1200 px (INDUPRO) + 60 px (Cliente)             -->
+  <!-- Pool INDUPRO: 8 swimlanes horizontales, 145px de alto cada una -->
+  <!--                                                                 -->
+  <!-- Leyenda de coordenadas Y (INDUPRO):                             -->
+  <!--   Lane 1 Ventas       y=40   — center_y=112                    -->
+  <!--   Lane 2 Finanzas     y=185  — center_y=257                    -->
+  <!--   Lane 3 Inventarios  y=330  — center_y=402                    -->
+  <!--   Lane 4 Sistema Auto y=475  — center_y=547                    -->
+  <!--   Lane 5 Planificac.  y=620  — center_y=692                    -->
+  <!--   Lane 6 Planta       y=765  — center_y=837                    -->
+  <!--   Lane 7 Calidad      y=910  — center_y=982                    -->
+  <!--   Lane 8 Logística   y=1055  — center_y=1127                   -->
+  <!--   Pool Cliente        y=1240 — collapsed (Black Box)            -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <bpmndi:BPMNDiagram id="sid-diagram-indupro-tobe">
+    <bpmndi:BPMNPlane
+       bpmnElement="sid-collab-indupro-tobe"
+       id="sid-plane-indupro-tobe">
+
+      <!-- ══ POOL shapes ══ -->
+
+      <!-- Pool INDUPRO S.A. (con proceso interno) -->
+      <bpmndi:BPMNShape
+         bpmnElement="sid-pool-indupro-tobe"
+         id="sid-pool-indupro-tobe_gui"
+         isHorizontal="true">
+        <omgdc:Bounds height="1160" width="2560" x="80" y="40"/>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="1160" width="24" x="80" y="40"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Pool Cliente (Black Box — collapsed, sin proceso interno) -->
+      <bpmndi:BPMNShape
+         bpmnElement="sid-pool-cliente"
+         id="sid-pool-cliente_gui"
+         isHorizontal="true">
+        <omgdc:Bounds height="60" width="2560" x="80" y="1240"/>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="60" width="24" x="80" y="1240"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- ══ Lane shapes ══ -->
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-ventas-tobe" id="sid-lane-ventas-tobe_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2510" x="130" y="40"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="136" y="64"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-finanzas-tobe" id="sid-lane-finanzas-tobe_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2510" x="130" y="185"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="136" y="209"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-inventarios-tobe" id="sid-lane-inventarios-tobe_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2510" x="130" y="330"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="136" y="354"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-sistema-tobe" id="sid-lane-sistema-tobe_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2510" x="130" y="475"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="136" y="499"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-planificacion-tobe" id="sid-lane-planificacion-tobe_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2510" x="130" y="620"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="136" y="644"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-planta-tobe" id="sid-lane-planta-tobe_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2510" x="130" y="765"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="136" y="789"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-calidad-tobe" id="sid-lane-calidad-tobe_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2510" x="130" y="910"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="136" y="934"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape bpmnElement="sid-lane-logistica-tobe" id="sid-lane-logistica-tobe_gui" isHorizontal="true">
+        <omgdc:Bounds height="145" width="2510" x="130" y="1055"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="96" width="12" x="136" y="1079"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- ══ NODOS: Events, Tasks, Gateways ══ -->
+
+      <!-- Start Event (Message) — Lane Ventas (center_y=112) -->
+      <bpmndi:BPMNShape bpmnElement="sid-start-tobe" id="sid-start-tobe_gui">
+        <omgdc:Bounds height="36" width="36" x="182" y="94"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="90" x="155" y="136"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 1 (serviceTask) — Lane Ventas (center_y=112, x=340) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-1-tobe" id="sid-task-1-tobe_gui">
+        <omgdc:Bounds height="70" width="130" x="275" y="77"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="280" y="91"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- AND SPLIT (parallelGateway) — Lane Sistema (center_y=547, x=490) -->
+      <bpmndi:BPMNShape bpmnElement="sid-gw-and-split-tobe" id="sid-gw-and-split-tobe_gui">
+        <omgdc:Bounds height="40" width="40" x="470" y="527"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="100" x="441" y="571"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 2A (serviceTask) — Lane Finanzas (center_y=257, x=660) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-2a-tobe" id="sid-task-2a-tobe_gui">
+        <omgdc:Bounds height="70" width="130" x="595" y="222"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="600" y="236"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 2B (serviceTask) — Lane Inventarios (center_y=402, x=660) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-2b-tobe" id="sid-task-2b-tobe_gui">
+        <omgdc:Bounds height="70" width="130" x="595" y="367"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="600" y="381"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- AND JOIN (parallelGateway) — Lane Sistema (center_y=547, x=840) -->
+      <bpmndi:BPMNShape bpmnElement="sid-gw-and-join-tobe" id="sid-gw-and-join-tobe_gui">
+        <omgdc:Bounds height="40" width="40" x="820" y="527"/>
+      </bpmndi:BPMNShape>
+
+      <!-- XOR ¿Credit+Stock? (exclusiveGateway) — Lane Sistema (center_y=547, x=960) -->
+      <bpmndi:BPMNShape bpmnElement="sid-gw-creditstock-tobe" id="sid-gw-creditstock-tobe_gui" isMarkerVisible="true">
+        <omgdc:Bounds height="40" width="40" x="940" y="527"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="48" width="110" x="906" y="571"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 6B (userTask) — Lane Planificación (center_y=692, x=1120) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-6b-tobe" id="sid-task-6b-tobe_gui">
+        <omgdc:Bounds height="70" width="130" x="1055" y="657"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="1060" y="671"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 7 (userTask) — Lane Planta (center_y=837, x=1310) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-7-tobe" id="sid-task-7-tobe_gui">
+        <omgdc:Bounds height="70" width="130" x="1245" y="802"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="1250" y="816"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 8 (userTask) — Lane Calidad (center_y=982, x=1310) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-8-tobe" id="sid-task-8-tobe_gui">
+        <omgdc:Bounds height="70" width="130" x="1245" y="947"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="1250" y="961"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- XOR QC (exclusiveGateway) — Lane Calidad (center_y=982, x=1470) -->
+      <bpmndi:BPMNShape bpmnElement="sid-gw-qc-tobe" id="sid-gw-qc-tobe_gui" isMarkerVisible="true">
+        <omgdc:Bounds height="40" width="40" x="1450" y="962"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="100" x="1421" y="1006"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 9B (userTask, NVA) — Lane Planta (center_y=837, x=1600) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-9b-tobe" id="sid-task-9b-tobe_gui">
+        <omgdc:Bounds height="70" width="130" x="1535" y="802"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="1540" y="816"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- XOR JOIN (exclusiveGateway Converging) — Lane Ventas (center_y=112, x=1750) -->
+      <bpmndi:BPMNShape bpmnElement="sid-gw-join-tobe" id="sid-gw-join-tobe_gui" isMarkerVisible="true">
+        <omgdc:Bounds height="40" width="40" x="1730" y="92"/>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 6A (sendTask) — Lane Ventas (center_y=112, x=1900) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-6a-tobe" id="sid-task-6a-tobe_gui">
+        <omgdc:Bounds height="70" width="130" x="1835" y="77"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="1840" y="91"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 10 (userTask) — Lane Logística (center_y=1127, x=1900) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-10-tobe" id="sid-task-10-tobe_gui">
+        <omgdc:Bounds height="70" width="130" x="1835" y="1092"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="1840" y="1106"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 11 (serviceTask) — Lane Logística (center_y=1127, x=2070) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-11-tobe" id="sid-task-11-tobe_gui">
+        <omgdc:Bounds height="70" width="130" x="2005" y="1092"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="2010" y="1106"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 12 (userTask) — Lane Logística (center_y=1127, x=2240) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-12-tobe" id="sid-task-12-tobe_gui">
+        <omgdc:Bounds height="70" width="130" x="2175" y="1092"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="2180" y="1106"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Task 13 (serviceTask) — Lane Finanzas (center_y=257, x=2410) -->
+      <bpmndi:BPMNShape bpmnElement="sid-task-13-tobe" id="sid-task-13-tobe_gui">
+        <omgdc:Bounds height="70" width="130" x="2345" y="222"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="120" x="2350" y="236"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- End Event (Message) — Lane Finanzas (center_y=257, x=2570) -->
+      <bpmndi:BPMNShape bpmnElement="sid-end-tobe" id="sid-end-tobe_gui">
+        <omgdc:Bounds height="36" width="36" x="2552" y="239"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="90" x="2530" y="280"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- ══════════════════════════════════════════════════════════ -->
+      <!-- SEQUENCE FLOW EDGES                                         -->
+      <!-- ══════════════════════════════════════════════════════════ -->
+
+      <!-- SF-01: Start(182,112) → Task1(275,112) horizontal en Ventas -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-01" id="sf-tobe-01_gui">
+        <omgdi:waypoint x="218" y="112"/>
+        <omgdi:waypoint x="275" y="112"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-02: Task1 → AND SPLIT: right from Ventas, down to Sistema -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-02" id="sf-tobe-02_gui">
+        <omgdi:waypoint x="405" y="112"/>
+        <omgdi:waypoint x="490" y="112"/>
+        <omgdi:waypoint x="490" y="527"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-03A: AND SPLIT → Task 2A (up from Sistema to Finanzas, then right) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-03a" id="sf-tobe-03a_gui">
+        <omgdi:waypoint x="490" y="527"/>
+        <omgdi:waypoint x="490" y="257"/>
+        <omgdi:waypoint x="595" y="257"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="14" width="72" x="497" y="380"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-03B: AND SPLIT → Task 2B (right in Sistema, up to Inventarios, then right) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-03b" id="sf-tobe-03b_gui">
+        <omgdi:waypoint x="510" y="547"/>
+        <omgdi:waypoint x="560" y="547"/>
+        <omgdi:waypoint x="560" y="402"/>
+        <omgdi:waypoint x="595" y="402"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="14" width="72" x="519" y="462"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-04A: Task 2A → AND JOIN (right from Finanzas, down to Sistema top) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-04a" id="sf-tobe-04a_gui">
+        <omgdi:waypoint x="725" y="257"/>
+        <omgdi:waypoint x="840" y="257"/>
+        <omgdi:waypoint x="840" y="527"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-04B: Task 2B → AND JOIN (right from Inventarios, down to Sistema left) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-04b" id="sf-tobe-04b_gui">
+        <omgdi:waypoint x="725" y="402"/>
+        <omgdi:waypoint x="780" y="402"/>
+        <omgdi:waypoint x="780" y="547"/>
+        <omgdi:waypoint x="820" y="547"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-05: AND JOIN → XOR ¿Credit+Stock? (horizontal in Sistema) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-05" id="sf-tobe-05_gui">
+        <omgdi:waypoint x="860" y="547"/>
+        <omgdi:waypoint x="940" y="547"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-06-SÍ: XOR ¿Credit+Stock? → XOR JOIN (up from Sistema to Ventas, then right) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-06-si" id="sf-tobe-06-si_gui">
+        <omgdi:waypoint x="960" y="527"/>
+        <omgdi:waypoint x="960" y="112"/>
+        <omgdi:waypoint x="1730" y="112"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="110" x="968" y="290"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-06-NO: XOR ¿Credit+Stock? → Task 6B (down from Sistema to Planificación) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-06-no" id="sf-tobe-06-no_gui">
+        <omgdi:waypoint x="960" y="567"/>
+        <omgdi:waypoint x="960" y="692"/>
+        <omgdi:waypoint x="1055" y="692"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="100" x="965" y="608"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-07: Task 6B → Task 7 (Planificación → Planta, down) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-07" id="sf-tobe-07_gui">
+        <omgdi:waypoint x="1185" y="692"/>
+        <omgdi:waypoint x="1310" y="692"/>
+        <omgdi:waypoint x="1310" y="802"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-08: Task 7 → Task 8 (Planta → Calidad, straight down) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-08" id="sf-tobe-08_gui">
+        <omgdi:waypoint x="1310" y="872"/>
+        <omgdi:waypoint x="1310" y="947"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-09: Task 8 → XOR QC (horizontal in Calidad) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-09" id="sf-tobe-09_gui">
+        <omgdi:waypoint x="1375" y="982"/>
+        <omgdi:waypoint x="1450" y="982"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-QC-APRUEBA: XOR QC → XOR JOIN (up from Calidad to Ventas, then right) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-qc-aprueba" id="sf-tobe-qc-aprueba_gui">
+        <omgdi:waypoint x="1470" y="962"/>
+        <omgdi:waypoint x="1470" y="112"/>
+        <omgdi:waypoint x="1730" y="112"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="24" width="85" x="1478" y="525"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-QC-RECHAZA: XOR QC → Task 9B (right in Calidad, up to Planta) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-qc-rechaza" id="sf-tobe-qc-rechaza_gui">
+        <omgdi:waypoint x="1490" y="982"/>
+        <omgdi:waypoint x="1600" y="982"/>
+        <omgdi:waypoint x="1600" y="872"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="24" width="70" x="1498" y="956"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-LOOP-9B: Task 9B → Task 8 (left in Planta, down to Calidad — loop) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-loop-9b" id="sf-tobe-loop-9b_gui">
+        <omgdi:waypoint x="1535" y="837"/>
+        <omgdi:waypoint x="1310" y="837"/>
+        <omgdi:waypoint x="1310" y="947"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="24" width="85" x="1360" y="811"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-10: XOR JOIN → Task 6A (horizontal in Ventas) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-10" id="sf-tobe-10_gui">
+        <omgdi:waypoint x="1770" y="112"/>
+        <omgdi:waypoint x="1835" y="112"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-11: Task 6A → Task 10 (Ventas → Logística, straight down) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-11" id="sf-tobe-11_gui">
+        <omgdi:waypoint x="1900" y="147"/>
+        <omgdi:waypoint x="1900" y="1092"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-12: Task 10 → Task 11 (horizontal in Logística) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-12" id="sf-tobe-12_gui">
+        <omgdi:waypoint x="1965" y="1127"/>
+        <omgdi:waypoint x="2005" y="1127"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-13: Task 11 → Task 12 (horizontal in Logística) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-13" id="sf-tobe-13_gui">
+        <omgdi:waypoint x="2135" y="1127"/>
+        <omgdi:waypoint x="2175" y="1127"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-14: Task 12 → Task 13 (Logística → Finanzas, long vertical) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-14" id="sf-tobe-14_gui">
+        <omgdi:waypoint x="2305" y="1127"/>
+        <omgdi:waypoint x="2410" y="1127"/>
+        <omgdi:waypoint x="2410" y="292"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- SF-15: Task 13 → End (horizontal in Finanzas) -->
+      <bpmndi:BPMNEdge bpmnElement="sf-tobe-15" id="sf-tobe-15_gui">
+        <omgdi:waypoint x="2475" y="257"/>
+        <omgdi:waypoint x="2552" y="257"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- ══════════════════════════════════════════════════════════ -->
+      <!-- MESSAGE FLOW EDGES (flujos entre pools)                     -->
+      <!-- Representados como líneas discontinuas con cabeza de flecha -->
+      <!-- ══════════════════════════════════════════════════════════ -->
+
+      <!-- MF-01: Cliente Pool → Start Event (solicitud vía portal web) -->
+      <bpmndi:BPMNEdge bpmnElement="mf-solicitud-inicio" id="mf-solicitud-inicio_gui">
+        <omgdi:waypoint x="200" y="1240"/>
+        <omgdi:waypoint x="200" y="130"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="100" x="206" y="1170"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- MF-02: Task 6A (SendTask) → Cliente Pool (confirmación automática de pedido) -->
+      <bpmndi:BPMNEdge bpmnElement="mf-confirmacion-cliente" id="mf-confirmacion-cliente_gui">
+        <omgdi:waypoint x="1900" y="147"/>
+        <omgdi:waypoint x="1900" y="1240"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="36" width="100" x="1906" y="1175"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- MF-03: End Event (Message) → Cliente Pool (factura electrónica) -->
+      <bpmndi:BPMNEdge bpmnElement="mf-factura-cliente" id="mf-factura-cliente_gui">
+        <omgdi:waypoint x="2570" y="275"/>
+        <omgdi:waypoint x="2570" y="1240"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds height="24" width="90" x="2576" y="740"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</definitions>
