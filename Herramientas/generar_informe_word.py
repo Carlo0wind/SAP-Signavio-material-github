@@ -29,8 +29,8 @@ DIC_ROLES    = BASE + r"\Entregables\Evidencia Dictionary\Diccionario - Roles.pn
 DIC_DEPT     = BASE + r"\Entregables\Evidencia Dictionary\Diccionario - Dept.png"
 DIC_SYS      = BASE + r"\Entregables\Evidencia Dictionary\Diccionario - IT Sys.png"
 DIC_DOC      = BASE + r"\Entregables\Evidencia Dictionary\Diccionario - Doc.png"
-IMG_ASIS     = BASE + r"\Analisis Final\Imagenes\AS-IS - Proceso de gesti\u00f3n de pedidos de INDUPRO S.A.png"
-IMG_TOBE     = BASE + r"\Analisis Final\Imagenes\TO-BE - Proceso de gesti\u00f3n de pedidos de INDUPRO S.A.png"
+IMG_ASIS     = BASE + r"\Entregables\Modelo AS-IS\AS-IS - Proceso de gesti\u00f3n de pedidos de INDUPRO S.A.png"
+IMG_TOBE     = BASE + r"\Entregables\Modelo TO-BE\TO-BE - Proceso de gesti\u00f3n de pedidos de INDUPRO S.A.png"
 
 # ── Paleta ────────────────────────────────────────────────────────────────────
 SAP_BLUE  = RGBColor(0x00, 0x70, 0xF2)
@@ -151,6 +151,18 @@ def bullet(doc, bold_part, text, size=10):
     r1.font.bold = True; r1.font.color.rgb = SAP_BLUE; r1.font.size = Pt(size)
     r2 = p.add_run(text)
     r2.font.size = Pt(size); r2.font.color.rgb = DARK_GRAY
+
+def link_placeholder(doc, label, hint=""):
+    """Inserta un bloque de texto resaltado para que el usuario pegue un enlace."""
+    p = doc.add_paragraph()
+    p.paragraph_format.space_before = Pt(3)
+    p.paragraph_format.space_after  = Pt(6)
+    p.paragraph_format.left_indent  = Cm(0.4)
+    r1 = p.add_run(u"\u25BA  [ENLACE / Imagen adicional: " + label + "]")
+    r1.font.size = Pt(9); r1.font.italic = True; r1.font.color.rgb = SAP_BLUE
+    if hint:
+        r2 = p.add_run("  ->  " + hint)
+        r2.font.size = Pt(8.5); r2.font.italic = True; r2.font.color.rgb = MED_GRAY
 
 # ── Documento ─────────────────────────────────────────────────────────────────
 doc = Document()
@@ -281,8 +293,7 @@ body(doc,
     "modelados como artefactos IT System con asociacion no direccional (sin flecha), "
     "conforme a la extension SAP Signavio descrita en S3.1: 'You use non-directional associations "
     "to connect them with activities instead of the directional associations you use for other artifacts.'")
-img_box(doc, "INSERTAR: Diagrama AS-IS desde SAP Signavio - INDUPRO_ASIS_Corregido_v2.bpmn")
-insert_img(doc, IMG_ASIS, "Fig. A - Modelado AS-IS: Proceso de Gestion de Pedidos INDUPRO S.A. (SAP Signavio BPMN 2.0)")
+insert_img(doc, IMG_ASIS, "Fig. A - Modelado AS-IS: Proceso de Gestion de Pedidos INDUPRO S.A. (SAP Signavio BPMN 2.0)", width=6.5)
 
 h2(doc, "2.3 Configuracion y resultados de simulacion AS-IS")
 make_table(doc,
@@ -315,10 +326,10 @@ make_table(doc,
         ("TOTAL (ruta fabricacion + reproceso)",      "09:55:00",  "$101.92","---"),
     ], header_bg="C03A2B", fs=8)
 body(doc, "Consumo de recursos AS-IS: Operario Planta 3h30m (35%) | Analista Finanzas 1h20m (13%) | Ejecutivo Ventas 1h15m (13%) | Coord. Inventarios 55m (9%) | Coord. Logistica 55m (9%) | Transportista 45m (8%) | Planificador 40m (7%) | Inspector Calidad 35m (6%)", size=8.5, italic=True)
-insert_img(doc, SIM_ASIS_1, "Fig. 1 - Vista general simulacion AS-IS (Escenario 1 - One Case)")
-insert_img(doc, SIM_ASIS_2, "Fig. 2 - Costos por actividad y probabilidades de gateways AS-IS", width=6.0)
-insert_img(doc, SIM_ASIS_3, "Fig. 3 - Tiempos de ejecucion puros AS-IS por actividad", width=6.0)
-insert_img(doc, SIM_ASIS_4, "Fig. 4 - Consumo de recursos AS-IS", width=6.0)
+insert_img(doc, SIM_ASIS_1, "Fig. 1 - Vista general simulacion AS-IS (Escenario 1 - One Case)", width=6.2)
+link_placeholder(doc, "Fig. 2 - Costos por actividad y gateways AS-IS (Escenario 1 AS IS pt 2.png)", "Reemplazar con captura de Signavio: resultados de costos AS-IS")
+link_placeholder(doc, "Fig. 3 - Tiempos de ejecucion puros AS-IS (Escenario 1 AS IS pt 3.png)", "Reemplazar con captura de Signavio: tiempos por actividad AS-IS")
+link_placeholder(doc, "Fig. 4 - Consumo de recursos AS-IS (Escenario 1 AS IS pt 4.png)", "Reemplazar con captura de Signavio: workload por recurso AS-IS")
 page_break(doc)
 
 # ── PAG 6-8: PROPUESTA TO-BE ──────────────────────────────────────────────────
@@ -384,8 +395,7 @@ make_table(doc,
         ("12 - Entrega + firma digital",      "User Task",    "TMS App movil",        "Transportista usa app de entrega"),
         ("13 - Factura electronica SRI",      "Service Task", "Datil.me / Sist.Int.", "Emitida automaticamente al confirmar entrega"),
     ], fs=8)
-img_box(doc, "INSERTAR: Diagrama TO-BE desde SAP Signavio - INDUPRO_TOBE_v1.bpmn (9 lanes + IT Systems + MessageFlows)")
-insert_img(doc, IMG_TOBE, "Fig. B - Modelado TO-BE: Proceso de Gestion de Pedidos INDUPRO S.A. rediseñado (SAP Signavio BPMN 2.0)")
+insert_img(doc, IMG_TOBE, "Fig. B - Modelado TO-BE: Proceso de Gestion de Pedidos INDUPRO S.A. redise\u00f1ado (SAP Signavio BPMN 2.0)", width=6.5)
 
 h2(doc, "3.4 Configuracion y resultados de simulacion TO-BE")
 make_table(doc,
@@ -416,10 +426,10 @@ make_table(doc,
         ("TOTAL (ruta fabricacion + reproceso)",                "04:12:30", "$55.23", "---"),
     ], header_bg="1A7A3C", fs=8)
 body(doc, "Consumo de recursos TO-BE: Operario Planta 2h30m (59%) | Operario QC en Proceso 2h00m (48%) | Inspector Calidad 1h00m (24%) | Coord. Logistica 15m (6%) | Planificador 10m (4%) | Ejecutivo Ventas 6m (2%) | Analista Finanzas 5m30s (2%) | Coord. Inventarios 5m (2%) | Transportista 1m (0%)", size=8.5, italic=True)
-insert_img(doc, SIM_TOBE_1, "Fig. 5 - Vista general simulacion TO-BE (Escenario 1 - One Case)")
-insert_img(doc, SIM_TOBE_2, "Fig. 6 - Costos por actividad TO-BE", width=6.0)
-insert_img(doc, SIM_TOBE_3, "Fig. 7 - Tiempos de ejecucion puros TO-BE por actividad", width=6.0)
-insert_img(doc, SIM_TOBE_4, "Fig. 8 - Consumo de recursos TO-BE", width=6.0)
+insert_img(doc, SIM_TOBE_1, "Fig. 5 - Vista general simulacion TO-BE (Escenario 1 - One Case)", width=6.2)
+link_placeholder(doc, "Fig. 6 - Costos por actividad TO-BE (Escenario 1 TO BE pt 2.png)", "Reemplazar con captura de Signavio: resultados de costos TO-BE")
+link_placeholder(doc, "Fig. 7 - Tiempos de ejecucion puros TO-BE (Escenario 1 TO BE pt 3.png)", "Reemplazar con captura de Signavio: tiempos por actividad TO-BE")
+link_placeholder(doc, "Fig. 8 - Consumo de recursos TO-BE (Escenario 1 TO BE pt 4.png)", "Reemplazar con captura de Signavio: workload por recurso TO-BE")
 page_break(doc)
 
 # ── PAG 9-10: COMPARACION AS-IS vs TO-BE ─────────────────────────────────────
@@ -572,11 +582,12 @@ make_table(doc,
         ("Documento",      "Informe QC",                 "Digital con firma (TO-BE) vs checklist papel (AS-IS)"),
         ("Documento",      "Comprobante electronico SRI","XML SRI autorizado automaticamente (TO-BE)"),
     ], fs=8)
-img_box(doc, "INSERTAR: Captura del Signavio Dictionary con los elementos registrados (Entregable E3)")
+link_placeholder(doc, "Acceso al Signavio Dictionary (Entregable E3)", "https://editor.signavio.com  ->  Dictionary  ->  INDUPRO S.A.")
 insert_img(doc, DIC_ROLES, "Fig. D1 - Dictionary: Roles", width=5.5)
 insert_img(doc, DIC_SYS,   "Fig. D2 - Dictionary: IT Systems", width=5.5)
 insert_img(doc, DIC_DEPT,  "Fig. D3 - Dictionary: Departamentos", width=5.5)
 insert_img(doc, DIC_DOC,   "Fig. D4 - Dictionary: Documentos", width=5.5)
+link_placeholder(doc, "Ver diccionario completo en SAP Signavio", "https://editor.signavio.com  ->  Dictionary  (todos los elementos registrados)")
 page_break(doc)
 
 # ── PAG 13: PROCESS MINING + CONCLUSIONES ────────────────────────────────────
