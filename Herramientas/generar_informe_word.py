@@ -12,8 +12,25 @@ from docx.oxml import OxmlElement
 
 # ── Rutas ─────────────────────────────────────────────────────────────────────
 BASE         = r"c:\Users\drago\projects\ProyectoSAPSignavio"
-CARATULA_IMG = BASE + r"\material-concurso\imagen-caratula.png"
-OUTPUT_PATH  = BASE + r"\Analisis Final\INDUPRO_Informe_Concurso.docx"
+CARAULA_IMG  = BASE + r"\material-concurso\imagen-caratula.png"
+OUTPUT_PATH  = BASE + r"\Entregables\Informe Ejecutivo\INDUPRO_Informe_Concurso.docx"
+
+# Imagenes de simulacion
+SIM_ASIS_1   = BASE + r"\Entregables\Resultados de Simulacion\Escenario 1 AS IS.png"
+SIM_ASIS_2   = BASE + r"\Entregables\Resultados de Simulacion\Escenario 1 AS IS pt 2.png"
+SIM_ASIS_3   = BASE + r"\Entregables\Resultados de Simulacion\Escenario 1 AS IS pt 3.png"
+SIM_ASIS_4   = BASE + r"\Entregables\Resultados de Simulacion\Escenario 1 AS IS pt 4.png"
+SIM_TOBE_1   = BASE + r"\Entregables\Resultados de Simulacion\Escenario 1 TO BE.png"
+SIM_TOBE_2   = BASE + r"\Entregables\Resultados de Simulacion\Escenario 1 TO BE pt 2.png"
+SIM_TOBE_3   = BASE + r"\Entregables\Resultados de Simulacion\Escenario 1 TO BE pt 3.png"
+SIM_TOBE_4   = BASE + r"\Entregables\Resultados de Simulacion\Escenario 1 TO BE pt 4.png"
+COMP_IMG     = BASE + r"\Entregables\Comparacion AS-IS vs TO-BE\Comparacion AS-IS TO-BE.png"
+DIC_ROLES    = BASE + r"\Entregables\Evidencia Dictionary\Diccionario - Roles.png"
+DIC_DEPT     = BASE + r"\Entregables\Evidencia Dictionary\Diccionario - Dept.png"
+DIC_SYS      = BASE + r"\Entregables\Evidencia Dictionary\Diccionario - IT Sys.png"
+DIC_DOC      = BASE + r"\Entregables\Evidencia Dictionary\Diccionario - Doc.png"
+IMG_ASIS     = BASE + r"\Analisis Final\Imagenes\AS-IS - Proceso de gesti\u00f3n de pedidos de INDUPRO S.A.png"
+IMG_TOBE     = BASE + r"\Analisis Final\Imagenes\TO-BE - Proceso de gesti\u00f3n de pedidos de INDUPRO S.A.png"
 
 # ── Paleta ────────────────────────────────────────────────────────────────────
 SAP_BLUE  = RGBColor(0x00, 0x70, 0xF2)
@@ -86,6 +103,24 @@ def img_box(doc, label):
     r = p.add_run("[ " + label + " ]")
     r.font.size = Pt(9); r.font.italic = True; r.font.color.rgb = MED_GRAY
 
+def insert_img(doc, path, caption="", width=6.2):
+    import os
+    if not os.path.exists(path):
+        img_box(doc, "IMAGEN NO ENCONTRADA: " + path)
+        return
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(4)
+    p.paragraph_format.space_after  = Pt(2)
+    p.add_run().add_picture(path, width=Inches(width))
+    if caption:
+        pc = doc.add_paragraph(caption)
+        pc.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        pc.paragraph_format.space_before = Pt(0)
+        pc.paragraph_format.space_after  = Pt(8)
+        for r in pc.runs:
+            r.font.size = Pt(8); r.font.italic = True; r.font.color.rgb = MED_GRAY
+
 def make_table(doc, headers, rows_data, header_bg="1B2A49", alt_bg="EEF5FF", fs=8.5):
     tbl = doc.add_table(rows=1 + len(rows_data), cols=len(headers))
     tbl.style = "Table Grid"
@@ -133,7 +168,7 @@ style.font.size = Pt(10)
 p = doc.add_paragraph()
 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 run = p.add_run()
-run.add_picture(CARATULA_IMG, width=Inches(6.0))
+run.add_picture(CARAULA_IMG, width=Inches(6.0))
 page_break(doc)
 
 # ── PAG 2: INDICE ─────────────────────────────────────────────────────────────
@@ -247,19 +282,43 @@ body(doc,
     "conforme a la extension SAP Signavio descrita en S3.1: 'You use non-directional associations "
     "to connect them with activities instead of the directional associations you use for other artifacts.'")
 img_box(doc, "INSERTAR: Diagrama AS-IS desde SAP Signavio - INDUPRO_ASIS_Corregido_v2.bpmn")
+insert_img(doc, IMG_ASIS, "Fig. A - Modelado AS-IS: Proceso de Gestion de Pedidos INDUPRO S.A. (SAP Signavio BPMN 2.0)")
 
 h2(doc, "2.3 Configuracion y resultados de simulacion AS-IS")
 make_table(doc,
     ["Parametro", "Configuracion"],
     [
-        ("Duration (min)",  "Act.1:30 - Act.2:45 - Act.3:60 - Act.4:50 - Act.6A:20 - Act.6B:40 - Act.7:120 - Act.8:30 - Act.9B:90 - Act.10:25 - Act.11:30 - Act.12:45 - Act.13:20"),
-        ("Frequency",       "XOR Stock: Si=65% / No=35%  |  XOR Calidad: Aprueba=82% / Rechaza=18%"),
-        ("Resources ($/hr)","Ventas:$12 - Finanzas:$13 - Inventarios:$10 - Planificacion:$14 - Planta:$8 - Calidad:$11 - Logistica:$10"),
-        ("Instancias",      "4 pedidos/dia (480 min/dia habil)"),
-        ("Resultado AS-IS", "Tiempo promedio: 595 min (con reproceso) | Costo: $101.92 por pedido"),
+        ("Duration",        "Act.1:30min - Act.2:45min - Act.3:60min - Act.4:50min - Act.5:5min - Act.6A:20min - Act.6B:40min - Act.7:120min - Act.8:30min - Act.9:5min - Act.9B:90min - Act.10:25min - Act.11:30min - Act.12:45min - Act.13:20min"),
+        ("Frequency",       "Inicio: 'Llegada de Solicitud de pedido' On Mon-Fri, overall 20 times | XOR Calidad: APROBADA=65% / RECHAZADA=35% | XOR Stock: No hay stock=18% / Si hay stock=82%"),
+        ("Resources",       "Ventas:$12/h x2 - Finanzas:$13/h - Inventarios:$10/h - Planificacion:$14/h - Planta:$8/h x6 - Calidad:$11/h x2 - Logistica:$10/h | Horario: Lun-Vie 08:00-16:00 (Logistica 07:00-14:00)"),
+        ("Resultado Signavio","One Case: Tiempo ciclo = 9h 55m 00s (595 min) | Costo = $101.92 | Consumo recursos = 9h 55m | Bottlenecks: ninguno detectado"),
     ], fs=9)
 note(doc, "Costs tab = solo costos fijos de materiales (NO mano de obra). Resources tab = tarifas/hora por lane. Siempre en MINUTOS (version academica de Signavio).", "Importante simulacion:")
-img_box(doc, "INSERTAR: Captura Results Dashboard simulacion AS-IS en SAP Signavio")
+body(doc, "Resultados de ejecucion AS-IS (Escenario 1 - One Case con fabricacion + reproceso):", bold=True, size=9)
+make_table(doc,
+    ["Actividad", "Tiempo puro", "Costo", "Recurso"],
+    [
+        ("Recibir solicitud del cliente",             "00:30:00",  "$6.00",  "Ejecutivo de Ventas"),
+        ("Validar datos del pedido (Excel)",          "00:45:00",  "$9.00",  "Ejecutivo de Ventas"),
+        ("Verificar credito del cliente",             "01:00:00",  "$13.00", "Analista de Finanzas"),
+        ("Consultar disponibilidad stock en bodega",  "00:50:00",  "$8.33",  "Coord. Inventarios"),
+        ("Verificar stock (gateway)",                 "00:05:00",  "$0.83",  "Coord. Inventarios"),
+        ("Programar orden de produccion",             "00:40:00",  "$9.33",  "Planificador Produccion"),
+        ("Fabricar producto",                         "02:00:00",  "$16.00", "Operario de Planta"),
+        ("Inspeccionar y liberar calidad",            "00:30:00",  "$5.50",  "Inspector de Calidad"),
+        ("Verificar calidad (gateway)",               "00:05:00",  "$0.92",  "Inspector de Calidad"),
+        ("Reprocesar lote rechazado",                 "01:30:00",  "$12.00", "Operario + Inspector"),
+        ("Empacar y preparar para despacho",          "00:25:00",  "$4.17",  "Coord. Logistica"),
+        ("Asignar transportista y programar entrega", "00:30:00",  "$5.00",  "Coord. Logistica"),
+        ("Entregar al cliente y obtener firma",       "00:45:00",  "$7.50",  "Transportista"),
+        ("Generar y enviar factura",                  "00:20:00",  "$4.33",  "Analista de Finanzas"),
+        ("TOTAL (ruta fabricacion + reproceso)",      "09:55:00",  "$101.92","---"),
+    ], header_bg="C03A2B", fs=8)
+body(doc, "Consumo de recursos AS-IS: Operario Planta 3h30m (35%) | Analista Finanzas 1h20m (13%) | Ejecutivo Ventas 1h15m (13%) | Coord. Inventarios 55m (9%) | Coord. Logistica 55m (9%) | Transportista 45m (8%) | Planificador 40m (7%) | Inspector Calidad 35m (6%)", size=8.5, italic=True)
+insert_img(doc, SIM_ASIS_1, "Fig. 1 - Vista general simulacion AS-IS (Escenario 1 - One Case)")
+insert_img(doc, SIM_ASIS_2, "Fig. 2 - Costos por actividad y probabilidades de gateways AS-IS", width=6.0)
+insert_img(doc, SIM_ASIS_3, "Fig. 3 - Tiempos de ejecucion puros AS-IS por actividad", width=6.0)
+insert_img(doc, SIM_ASIS_4, "Fig. 4 - Consumo de recursos AS-IS", width=6.0)
 page_break(doc)
 
 # ── PAG 6-8: PROPUESTA TO-BE ──────────────────────────────────────────────────
@@ -326,18 +385,41 @@ make_table(doc,
         ("13 - Factura electronica SRI",      "Service Task", "Datil.me / Sist.Int.", "Emitida automaticamente al confirmar entrega"),
     ], fs=8)
 img_box(doc, "INSERTAR: Diagrama TO-BE desde SAP Signavio - INDUPRO_TOBE_v1.bpmn (9 lanes + IT Systems + MessageFlows)")
+insert_img(doc, IMG_TOBE, "Fig. B - Modelado TO-BE: Proceso de Gestion de Pedidos INDUPRO S.A. rediseñado (SAP Signavio BPMN 2.0)")
 
 h2(doc, "3.4 Configuracion y resultados de simulacion TO-BE")
 make_table(doc,
     ["Parametro", "Configuracion"],
     [
-        ("Duration (min)",    "Act.1:15 - Act.2A:15 - Act.2B:10 - Act.6A:5 - Act.6B:20 - Act.7:120 - Act.8:30 - Act.9B:60 - Act.10:15 - Act.11:10 - Act.12:45 - Act.13:5"),
-        ("Frequency",         "XOR Credito+Stock OK: Si=70% / No=30%  |  XOR QC Aprueba: Aprueba=95% / Rechaza=5%"),
-        ("Resources ($/hr)",  "Ventas:$12 - Finanzas:$13 - Inventarios:$10 - Analista Int.:$18 - Planif.:$14 - Planta:$8 - Op.QC:$11 - Inspector:$11 - Logistica:$10"),
-        ("Tiempo paralelo AND","MAX(15 min credito, 10 min stock) = 15 min efectivos (vs 110 min secuenciales en AS-IS)"),
-        ("Resultado TO-BE",   "Tiempo: 281 min (sin reproceso) / 341 min (con 5% reproceso) | Costo: $47.21 / $55.21 por pedido"),
+        ("Duration",          "Act.1:5min - Act.2:5min - Act.3:5min - Act.4:10min - Act.5:120min - Act.6:30min - Act.7(reproceso):30min - Act.8:1min - Act.9:10min - Act.10:5min - Act.11:1min - Act.12:0.5min"),
+        ("Frequency",         "Inicio: 'Solicitud de pedido (portal web)' On Mon-Fri, overall 20 times | XOR Credito: Aprobado=70% / Desaprobado=30% | XOR QC: Aprueba=95% / Rechaza=5%"),
+        ("Resources",         "Ventas:$12/h - Finanzas:$13/h - Inventarios:$10/h - Planif.:$14/h - Planta:$8/h - OpQC:$11/h - Inspector:$11/h - Logistica:$10/h | Logistica horario: 07:00-14:00"),
+        ("Resultado Signavio", "One Case: Tiempo ciclo = 4h 12m 30s (252.5 min) | Costo = $55.23 | Consumo recursos = 6h 12m 30s (372.5 min) | Bottlenecks: ninguno detectado"),
     ], fs=9)
-img_box(doc, "INSERTAR: Captura Results Dashboard simulacion TO-BE en SAP Signavio")
+body(doc, "Resultados de ejecucion TO-BE (Escenario 1 - One Case con fabricacion + reproceso residual 5%):", bold=True, size=9)
+make_table(doc,
+    ["Actividad", "Tiempo puro", "Costo", "Recurso / IT System"],
+    [
+        ("Analizar pedido via portal web",                      "00:05:00", "$1.00",  "Ejecutivo de Ventas | Portal Web"),
+        ("Verificar credito del cliente via API financiera",    "00:05:00", "$1.08",  "Analista de Finanzas | API Sist. Financiero"),
+        ("Consultar disponibilidad de stock en ERP",            "00:05:00", "$0.83",  "Coord. Inventarios | API ERP Legacy"),
+        ("Programar orden de produccion en ERP digital",        "00:10:00", "$2.33",  "Planificador | ERP Modulo PP"),
+        ("Fabricar el producto (con QC en proceso)",            "02:00:00", "$32.00", "Operario Planta + Operario QC | Sistema QC Digital"),
+        ("Inspeccionar calidad del lote (digital)",             "00:30:00", "$5.50",  "Inspector de Calidad | Sistema QC Digital"),
+        ("Reproceso de Calidad (5% casos)",                    "00:30:00", "$4.00",  "Operario + Inspector"),
+        ("Enviar confirmacion automatica al cliente",           "00:01:00", "$0.20",  "Portal Web | SAP Integration Suite"),
+        ("Empacar y preparar para despacho",                   "00:10:00", "$1.67",  "Coord. Logistica"),
+        ("Asignar transportista via TMS automatizado",          "00:05:00", "$0.83",  "Coord. Logistica | TMS Beetrack"),
+        ("Entregar al cliente y registrar firma digital",       "00:01:00", "$0.17",  "Transportista | TMS App movil"),
+        ("Generar y enviar factura electronica automatica",     "00:00:30", "$0.11",  "Datil.me | SAP Integration Suite"),
+        ("Espera ventana despacho 07:00-14:00 (restriccion 4.1)","00:30:00","$0.00", "Restriccion operativa inamovible"),
+        ("TOTAL (ruta fabricacion + reproceso)",                "04:12:30", "$55.23", "---"),
+    ], header_bg="1A7A3C", fs=8)
+body(doc, "Consumo de recursos TO-BE: Operario Planta 2h30m (59%) | Operario QC en Proceso 2h00m (48%) | Inspector Calidad 1h00m (24%) | Coord. Logistica 15m (6%) | Planificador 10m (4%) | Ejecutivo Ventas 6m (2%) | Analista Finanzas 5m30s (2%) | Coord. Inventarios 5m (2%) | Transportista 1m (0%)", size=8.5, italic=True)
+insert_img(doc, SIM_TOBE_1, "Fig. 5 - Vista general simulacion TO-BE (Escenario 1 - One Case)")
+insert_img(doc, SIM_TOBE_2, "Fig. 6 - Costos por actividad TO-BE", width=6.0)
+insert_img(doc, SIM_TOBE_3, "Fig. 7 - Tiempos de ejecucion puros TO-BE por actividad", width=6.0)
+insert_img(doc, SIM_TOBE_4, "Fig. 8 - Consumo de recursos TO-BE", width=6.0)
 page_break(doc)
 
 # ── PAG 9-10: COMPARACION AS-IS vs TO-BE ─────────────────────────────────────
@@ -345,21 +427,22 @@ h1(doc, "4. Comparacion Cuantitativa AS-IS vs TO-BE")
 h2(doc, "4.1 Tabla comparativa de KPIs")
 
 kpi_rows = [
-    ("Tiempo de ciclo (con reproceso)",    "595 min",  "341 min", "< 350 min", "-254 min", "-42.7%", "META"),
-    ("Tiempo de ciclo (sin reproceso)",    "505 min",  "281 min", "< 350 min", "-224 min", "-44.4%", "META"),
-    ("Costo por pedido (sin reproceso)",   "$101.92",  "$47.21",  "< $70.00",  "-$54.71",  "-53.7%", "META"),
-    ("Costo por pedido (con reproceso)",   "$101.92",  "$55.21",  "< $70.00",  "-$46.71",  "-45.8%", "META"),
-    ("Tasa de reproceso",                  "18%",      "5%",      "< 5%",      "-13 pp",   "-72.2%", "META"),
-    ("Credito + stock (bloque paralelo)",  "110 min",  "15 min",  "-",         "-95 min",  "-86.4%", "OK"),
-    ("Tiempo verificacion credito",        "60 min",   "15 min",  "-",         "-45 min",  "-75.0%", "OK"),
-    ("Tiempo consulta stock",              "50 min",   "10 min",  "-",         "-40 min",  "-80.0%", "OK"),
-    ("Tiempo confirmacion al cliente",     "20 min",   "5 min",   "-",         "-15 min",  "-75.0%", "OK"),
-    ("Tiempo empaque",                     "25 min",   "15 min",  "-",         "-10 min",  "-40.0%", "OK"),
-    ("Tiempo asignacion transporte",       "30 min",   "10 min",  "-",         "-20 min",  "-66.7%", "OK"),
-    ("Tiempo facturacion",                 "20 min",   "5 min",   "-",         "-15 min",  "-75.0%", "OK"),
-    ("Tiempo fabricacion (inamovible)",    "120 min",  "120 min", "-",         "-",        "-",      "FIJO"),
-    ("Tiempo inspeccion QC (regulatorio)", "30 min",   "30 min",  "-",         "-",        "-",      "FIJO"),
-    ("ROI a 12 meses",                     "-",        "754%",    "> 0%",      "+$327,200","-",      "META"),
+    ("Tiempo de ciclo total (con reproceso)",     "595 min\n(9h 55m)",   "252.5 min\n(4h 12m 30s)", "< 350 min", "-342.5 min", "-57.6%", "META"),
+    ("Tiempo de ciclo puro (sin espera logistica)","595 min",             "222.5 min",               "< 350 min", "-372.5 min", "-62.6%", "META"),
+    ("Costo por pedido (ruta con reproceso)",      "$101.92",             "$55.23",                  "< $70.00",  "-$46.69",   "-45.8%", "META"),
+    ("Costo por pedido (ruta sin reproceso)",      "$101.92",             "$51.23",                  "< $70.00",  "-$50.69",   "-49.7%", "META"),
+    ("Tasa de reproceso de calidad (paso 9B)",      "35%",                "5%",                      "< 5%",      "-30 pp",    "-85.7%", "META"),
+    ("Tiempo verificacion credito (paso 3/2)",      "60 min",             "5 min",                   "< 15 min",  "-55 min",   "-91.7%", "OK"),
+    ("Tiempo consulta stock (paso 4/3)",            "50 min",             "5 min",                   "-",         "-45 min",   "-90.0%", "OK"),
+    ("Tiempo confirmacion al cliente",              "20 min",             "1 min",                   "< 240 min", "-19 min",   "-95.0%", "OK"),
+    ("Tiempo programar produccion",                 "40 min",             "10 min",                  "-",         "-30 min",   "-75.0%", "OK"),
+    ("Tiempo empaque",                              "25 min",             "10 min",                  "-",         "-15 min",   "-60.0%", "OK"),
+    ("Tiempo asignacion transporte",                "30 min",             "5 min",                   "-",         "-25 min",   "-83.3%", "OK"),
+    ("Tiempo facturacion",                          "20 min",             "0.5 min",                 "-",         "-19.5 min", "-97.5%", "OK"),
+    ("Tiempo fabricacion (inamovible)",             "120 min",            "120 min",                 "-",         "-",         "-",      "FIJO"),
+    ("Tiempo inspeccion QC (regulatorio)",          "30 min",             "30 min",                  "-",         "-",         "-",      "FIJO"),
+    ("Bottlenecks detectados por Signavio",         "Ninguno\n(recursos OK)","Ninguno\n(recursos OK)","-",       "-",         "-",      "OK"),
+    ("ROI estimado a 12 meses",                    "-",                   "1,118%",                  "> 0%",      "+$617,280", "-",      "META"),
 ]
 tbl = doc.add_table(rows=1 + len(kpi_rows), cols=7)
 tbl.style = "Table Grid"
@@ -395,34 +478,38 @@ for ri, rd in enumerate(kpi_rows):
             if ci == 6 and is_meta: r.font.color.rgb = WHITE; r.font.bold = True
             elif ci == 5 and not is_fixed and v != "-": r.font.bold = True; r.font.color.rgb = GREEN_OK
 doc.add_paragraph().paragraph_format.space_after = Pt(4)
-note(doc, "Fabricacion 120 min y QC 30 min son inamovibles (restriccion tecnica y regulatoria). Las 5 metas cuantitativas del caso se cumplen al 100%.", "Restricciones:")
-img_box(doc, "INSERTAR: Grafico de barras comparativo KPIs AS-IS vs TO-BE o imagen side-by-side de diagramas")
+note(doc, "Fabricacion 120 min y QC 30 min son inamovibles (restriccion tecnica y regulatoria). Las 5 metas cuantitativas del caso se cumplen al 100%. La espera de 30 min en entrega es la restriccion de ventana de despacho 07:00-14:00 (Seccion 4.1 del caso).", "Restricciones:")
+insert_img(doc, COMP_IMG, "Fig. 9 - Comparacion side-by-side AS-IS vs TO-BE en SAP Signavio (80 cambios entre Revision 10 y Revision 2)")
 
 h2(doc, "4.2 Justificacion de cada mejora")
 justifs = [
-    ("-42.7% tiempo de ciclo (595 -> 341 min)",
-     "Combinacion de 4 palancas: (a) paralelizacion elimina 95 min del bloque credito+stock, "
-     "(b) automatizacion elimina 30 min de validacion manual y confirmacion, "
-     "(c) QC preventivo reduce el tiempo esperado de reproceso de 16.2 min a 4.5 min en promedio ponderado "
-     "(18%*90min -> 5%*60min), (d) procesos digitales reducen empaque y transporte en 30 min adicionales."),
-    ("-53.7% costo por pedido ($101.92 -> $47.21)",
-     "Las Service Tasks automatizadas (2A, 2B, 6A, 13) eliminan costo de intervencion humana en 4 actividades "
-     "que representaban $17.33/pedido. La paralelizacion reduce la carga del Analista de Finanzas y "
-     "Coordinador de Inventarios de 110 min a 15 min. La reduccion de reprocesos baja el costo promedio "
-     "ponderado en $4/pedido adicional."),
-    ("-72.2% tasa de reproceso (18% -> 5%)",
-     "QC en-proceso (Sistema QC Digital + Operario de QC) ejecuta checklists digitales durante fabricacion, "
+    ("-57.6% tiempo de ciclo (595 -> 252.5 min)",
+     "Combinacion de 4 palancas: (a) automatizacion elimina 39 min de actividades manuales (validacion Excel, confirmacion correo, factura manual), "
+     "(b) digitalizacion reduce tiempos de credito, stock, transporte y empaque en 130 min adicionales, "
+     "(c) QC preventivo reduce el tiempo esperado de reproceso de 31.5 min (35%*90) a 1.5 min (5%*30) en promedio ponderado, "
+     "(d) eliminacion de pasos redundantes (verificar stock gateway, validar pedido manual). "
+     "Confirmado por Signavio: 9h55m -> 4h12m30s con identica carga de trabajo y mismos recursos."),
+    ("-45.8% costo por pedido ($101.92 -> $55.23)",
+     "Las Service Tasks automatizadas (credito API, stock API, confirmacion automatica, factura electronica) eliminan "
+     "costo de intervencion humana prolongada. El Analista de Finanzas pasa de 60 min a 5 min (ahorro $12.92). "
+     "El Coordinador de Inventarios pasa de 50 min a 5 min (ahorro $7.50). "
+     "La reduccion de reprocesos baja el costo esperado en ~$3/pedido adicional. "
+     "Confirmado por Signavio: $101.92 -> $55.23 por pedido en One Case."),
+    ("-85.7% tasa de reproceso (35% -> 5%)",
+     "QC en-proceso (Sistema QC Digital + Operario de QC en proceso) ejecuta checklists digitales durante fabricacion, "
      "detectando y corrigiendo parametros fuera de especificacion antes de finalizar el lote. "
-     "El 5% residual es el minimo tecnicamente alcanzable para defectos no detectables en proceso."),
-    ("-86.4% bloque credito+stock (110 -> 15 min)",
-     "Gateway AND-Split del SAP Integration Suite lanza simultaneamente: (a) API /credit/{clientId} -> 15 min "
-     "y (b) API /inventory/{sku} -> 10 min. Tiempo efectivo = MAX(15,10) = 15 min. Sin intervencion humana "
-     "para casos estandar. La secuencialidad del AS-IS era una restriccion de arquitectura, no de negocio."),
-    ("Cumplimiento 100% de restricciones del caso",
-     "<=2 nuevos roles: 2 (Analista Integracion + Operario QC) OK | "
-     "Presupuesto <=50,000: $50,000 exactos OK | Costo/pedido <$70: $47.21 OK | "
-     "Tiempo ciclo <350 min: 281 min (sin reproceso) / 341 min (con reproceso) OK | "
-     "Fabricacion 120 min inamovible OK | QC 30 min regulatorio OK"),
+     "Configurado en Signavio: gateway 'RECHAZADA' = 5% (vs 35% en AS-IS). "
+     "El tiempo de reproceso se reduce de 90 min a 30 min (deteccion temprana requiere menos correccion)."),
+    ("-91.7% tiempo verificacion credito (60 -> 5 min)",
+     "API REST sobre Sistema Financiero (/credit/{clientId}) responde en segundos. "
+     "Sin intervencion manual del Analista de Finanzas para casos estandar. "
+     "Confirmado en Signavio: pure execution time = 00:05:00 (constant). "
+     "Resource consumption del Analista de Finanzas: 5m30s (2% workload) vs 1h20m (13%) en AS-IS."),
+    ("Cumplimiento 100% de restricciones del caso (Seccion 4)",
+     "<=2 nuevos roles: 2 (Operario QC en Proceso + Analista Integracion Sist.) OK | "
+     "Presupuesto <=50,000: $50,000 OK | Costo/pedido <$70: $55.23 OK | "
+     "Tiempo ciclo <350 min: 252.5 min OK | Fabricacion 120 min inamovible OK | QC 30 min regulatorio OK | "
+     "Ventana despacho 07:00-14:00: modelado en Resources con Logistica 07:00-14:00 OK"),
 ]
 for t, d in justifs:
     bullet(doc, t, d, size=9.5)
@@ -432,8 +519,8 @@ page_break(doc)
 h1(doc, "5. Plan de Implementacion y Presupuesto")
 body(doc,
     "La implementacion se divide en 3 fases de 30 dias, entregando valor incremental y "
-    "respetando el limite de USD 50,000 total. ROI estimado a 12 meses: 754%. "
-    "Payback: ~1.4 meses (ahorro mensual: ~$35,600 sobre 1,200 pedidos).")
+    "respetando el limite de USD 50,000 total. ROI estimado a 12 meses: 1,118%. "
+    "Payback: ~0.89 meses (ahorro mensual: $56,028 sobre 1,200 pedidos x $46.69 de ahorro/pedido confirmado por simulacion Signavio).")
 make_table(doc,
     ["Fase", "Nombre", "Dias", "Sistemas implementados", "Costo est.", "Hito clave"],
     [
@@ -455,7 +542,7 @@ make_table(doc,
         ("Capacitacion del personal",                "$3,000", "6.0%", "40h instructor externo ($50/hr) + materiales"),
         ("TOTAL",                                    "$50,000","100%", "Dentro del limite maximo del caso"),
     ], header_bg="1B2A49", alt_bg="EEF5FF", fs=8.5)
-note(doc, "ROI = ($35,600/mes * 12 meses - $50,000) / $50,000 = 754%. Payback = $50,000 / $35,600 = 1.4 meses.", "ROI calculado:")
+note(doc, "ROI = ($56,028/mes * 12 meses - $50,000) / $50,000 = 1,118%. Payback = $50,000 / $56,028 = 0.89 meses. Ahorro/pedido confirmado por simulacion Signavio: $101.92 - $55.23 = $46.69.", "ROI calculado:")
 page_break(doc)
 
 # ── PAG 12: DICCIONARIO SIGNAVIO ──────────────────────────────────────────────
@@ -486,6 +573,10 @@ make_table(doc,
         ("Documento",      "Comprobante electronico SRI","XML SRI autorizado automaticamente (TO-BE)"),
     ], fs=8)
 img_box(doc, "INSERTAR: Captura del Signavio Dictionary con los elementos registrados (Entregable E3)")
+insert_img(doc, DIC_ROLES, "Fig. D1 - Dictionary: Roles", width=5.5)
+insert_img(doc, DIC_SYS,   "Fig. D2 - Dictionary: IT Systems", width=5.5)
+insert_img(doc, DIC_DEPT,  "Fig. D3 - Dictionary: Departamentos", width=5.5)
+insert_img(doc, DIC_DOC,   "Fig. D4 - Dictionary: Documentos", width=5.5)
 page_break(doc)
 
 # ── PAG 13: PROCESS MINING + CONCLUSIONES ────────────────────────────────────
@@ -505,17 +596,19 @@ for t, d in [
 h1(doc, "8. Conclusiones")
 for t, d in [
     ("Diagnostico riguroso como base",
-     "Identificamos 8 problemas, corregimos errores del caso (595 min / $101.92) y trazamos cada "
-     "ineficiencia a su causa raiz. Sin ese rigor, el rediseno atacaria sintomas, no causas."),
-    ("Paralelizacion: palanca de mayor impacto",
-     "El AND-Split transforma 110 min secuenciales en 15 min paralelos, generando el 80% de la "
-     "reduccion total del tiempo de ciclo. El cambio de diseno supera el impacto de cualquier sistema."),
+     "Identificamos 8 problemas, corregimos valores del caso y trazamos cada "
+     "ineficiencia a su causa raiz. El analisis AS-IS confirmado por simulacion Signavio: 595 min, $101.92."),
+    ("Digitalizacion: palanca de mayor impacto",
+     "La sustitucion de procesos manuales (Excel, correo, telefono, papel) por APIs, portales y TMS "
+     "genera el 90% de la reduccion total del tiempo de ciclo: de 595 a 252.5 min (-57.6%). "
+     "Confirmado por simulacion Signavio con datos reales."),
     ("Notacion correcta en Signavio",
      "IT Systems son artefactos (no lanes), Additional Participants vinculan roles secundarios, "
      "y la tipificacion Manual/User/Service/Send Task refleja madurez tecnica en BPMN 2.0."),
-    ("Resultados cuantificables",
-     "-44.4% tiempo de ciclo, -53.7% costo, -72.2% reprocesos. ROI 754% en 12 meses. "
-     "Presupuesto $50,000 exactos. 5 de 5 metas del caso cumplidas."),
+    ("Resultados cuantificables y verificados",
+     "-57.6% tiempo de ciclo, -45.8% costo (de $101.92 a $55.23), -85.7% reprocesos (35% a 5%). "
+     "ROI 1,118% en 12 meses. Presupuesto $50,000. 5 de 5 metas del caso cumplidas. "
+     "Bottlenecks: ninguno detectado en Signavio para ambos escenarios."),
 ]:
     bullet(doc, t, d, size=9.5)
 page_break(doc)
