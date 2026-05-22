@@ -1,0 +1,39 @@
+PROBLEMAS DE AS-IS
+
+1. No existe paralelizaición de tareas para reducir
+
+2. Se maneja por puros procesos manuales
+
+3. Sus sistemas legacy, facturacion y de conexion de financiero no están integrados
+
+4. No hay una manera de que puedan itneractuar a través de un portal unificado
+
+
+
+PROBLEMAS DE KPIs y de INDICADORES PROPUESTOS SEGÚN AS-IS del MISMO CASO
+
+5. Dentro del caso propuesto, se ha hecho una mala suma de TODAS las actividades (incluyendo las dos decisiones XOR) y así llega a 105.91. Eso no es correcto ya que se supone que se refiere a la ruta con reproceso y fabricación.
+
+Y si incluyera todo, para forzarlo hacia 105.91, el tiempo no concuerda con el propuesto, ya que suma todas las actividades hasta 615 minutos.
+
+6. Dentro del caso propuesto, se ha hecho una imposibilidad de cálculo para los 555 minutos con ruta de reproceso y fabricación, dentro se ha hecho el análisis de que están ignorando las dos actividades de la ruta XOR de Stock (6A y 6B). por lo que de eso modo, contando todos los minutos seria
+
+615 minutos - Tiempo 6A 20 MIN - Tiempo 6B 40 MIN y llega a dar 555 minutos. 
+
+Eso no es correcto según la ruta. Si tomamos enc uenta, y seguimos fielmente el modelado. Nos encontramos con esos errores, y al tomar la ruta correcta propuesta los reusltados de los KPIs para reproceso y fabricación son:
+
+
+
+595 min y 101.92 (ya que se ha redondeado cada una de las actividades dentro del caso a dos decimales, porque se hace un cálculo con decimales periódicos ej. 9.33333....), así, el mismo signavio redondea hacia .92. pero el caso lo truncó hasta .91. Esos 4 dólares, dentro del costo, son de la actividad de Confirmación de pedido al cliente. 
+
+Esos 40 minutos extra, son de la inclusión de la actividad de la tarea 6B.
+
+7. Existe una incertidumbre y no se deja claro en el caso, cómo es que sigue el proceso desde confirmación, si es que sigue hacia Fabricación de Producto o Empaque (que sería lo mínimo para que cumpla la lógica de negocio ya que existe el stock, no tiene caso de que vayan hacia fabricar producto). 
+
+No es una caracterización de proceso completa. Si bien existe la aprte de estados de stock dentro del ERP como bloqueado, en calidad y liberado, acá estamos contemplando algo mínimo que proponen como proceso. 
+
+8. La actividad reprocesar está tomando la mayoría de tiempo como cuello de botella entero para el personal
+
+PROPUESTA PARA HACER AS-IS NUEVO Y TO-BE GOD
+
+Por lo que, se propone este modelado as is siguiendo la propuesta, además de una mejora de modelado as is para que vaya acorde a la situación y tenga lógica de negocio. Luego de ello, se propone el TOBE para optimizar esos tiempos de 101.92 y de 595 minutos.
